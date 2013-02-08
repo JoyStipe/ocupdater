@@ -22,8 +22,6 @@ string g_sOwnersToken = "owner";
 string g_sSecOwnersToken = "secowners";
 string g_sBlackListToken = "blacklist";
 
-string g_sPrefix;
-
 //dialog handlers
 key g_kAuthMenuID;
 key g_kSensorMenuID;
@@ -165,17 +163,28 @@ list AddUniquePerson(list lContainer, key kID, string sName, string sType)
     {   //owner is already in list.  just replace the name
         lContainer = llListReplaceList(lContainer, [sName], iIndex + 1, iIndex + 1);
     }
-
+    string msg;
     if (kID != g_kWearer)
     {
-        Notify(g_kWearer, "Added " + sName + " to " + sType + ".", FALSE);
+	    Notify(g_kWearer, "Added " + sName + " to " + sType + ".", FALSE);
         if (sType == "owner")
         {
-            Notify(g_kWearer, "Your owner can have a lot  power over you and you consent to that by making them your owner on your collar. They can leash you, put you in poses, lock your collar, see your location and what you say in local chat.  If you are using RLV they can  undress you, make you wear clothes, restrict your  chat, IMs and TPs as well as force TP you anywhere they like. Please read the help for more info. If you do not consent, you can use the command \"" + g_sPrefix + "runaway\" to remove all owners from the collar.", FALSE);
+            msg = "notify=Your owner can have a lot of power over you and you consent to that by making them your ";
+            msg += "owner on your collar. They can leash you, put you in poses, lock your collar, see your location ";
+            msg += "and what you say in local chat.  If you are using RLV they can  undress you, make you wear clothes, ";
+            msg += "restrict your  chat, IMs and TPs as well as force TP you anywhere they like. Please read the help ";
+            msg += "for more info. If you do not consent, you can use the command \"" + "runaway\" to remove all ";
+            msg += "owners from the collar.";
+            llMessageLinked(LINK_SET, LM_SETTING_RESPONSE, msg, g_kWearer);
         }
     }
 
-    if (sType == "owner" || sType == "secowner") Notify(kID, "You have been added to the " + sType + " list on " + llKey2Name(g_kWearer) + "'s collar.\nFor help concerning the collar usage either say \"" + g_sPrefix + "help\" in chat or go to " + g_sWikiURL + " .",FALSE);
+    if (sType == "owner" || sType == "secowner")
+    {
+        msg = "notify=You have been added to the " + sType + " list on " + llKey2Name(g_kWearer) + "'s collar.\nFor ";
+        msg += "help concerning the collar usage either say \"" + "help\" in chat or go to " + g_sWikiURL + " .";
+        llMessageLinked(LINK_SET, LM_SETTING_RESPONSE, msg, kID);
+    }
     return lContainer;
 }
 
@@ -759,8 +768,6 @@ default
     {   //until set otherwise, wearer is owner
         Debug((string)llGetFreeMemory());
         g_kWearer = llGetOwner();
-        list sName = llParseString2List(llKey2Name(g_kWearer), [" "], []);
-        g_sPrefix = llToLower(llGetSubString(llList2String(sName, 0), 0, 0)) + llToLower(llGetSubString(llList2String(sName, 1), 0, 0));
         //added for attachment auth
         g_iInterfaceChannel = (integer)("0x" + llGetSubString(g_kWearer,30,-1));
         if (g_iInterfaceChannel > 0) g_iInterfaceChannel = -g_iInterfaceChannel;
@@ -869,10 +876,6 @@ default
             else if (sToken == "blacklist")
             {
                 g_lBlackList = llParseString2List(sValue, [","], [""]);
-            }
-            else if (sToken == "prefix")
-            {
-                g_sPrefix = sValue;
             }
         }
         else if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu)
