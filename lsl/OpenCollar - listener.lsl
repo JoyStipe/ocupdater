@@ -449,6 +449,7 @@ default
             {
                 integer i = llSubStringIndex(sValue, "\"");
                 string msg = llGetSubString(sValue, 0, i) + g_sPrefix + llGetSubString(sValue, i + 1, -1);
+                Notify(kID, msg, FALSE);
             }
         }
         else if (iNum == LM_SETTING_EMPTY && sStr == "prefix")
