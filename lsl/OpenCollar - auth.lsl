@@ -220,8 +220,12 @@ key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integ
 } 
 
 Name2Key(string sFormattedName)
-{   //formatted name is firstname+lastname
-    g_kHTTPID = llHTTPRequest("http://w-hat.com/name2key?terse=1&name=" + sFormattedName, [HTTP_METHOD, "GET"], "");
+{
+    // Variant of N2K, uses SL's internal search engine instead of external databases
+    string url = "http://www.w3.org/services/html2txt?url=";
+    string escape = "http://vwrsearch.secondlife.com/client_search.php?session=00000000-0000-0000-0000-000000000000&q=";
+    g_kHTTPID = llHTTPRequest(url + llEscapeURL(escape) + llEscapeURL(sName), [], "");
+    // --OLD method below, no longer works in SL - database most likely gone
 }
 
 AuthMenu(key kAv, integer iAuth)
