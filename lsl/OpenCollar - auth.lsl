@@ -818,8 +818,8 @@ default
             {
                 llMessageLinked(LINK_SET, iAuth, sStr, kID);
             }
-
             Debug("noauth: " + sStr + " from " + (string)kID + " who has auth " + (string)iAuth);
+            return; // NOAUTH messages need go no further
         }
         else if (UserCommand(iNum, sStr, kID)) return;
         else if (iNum == LM_SETTING_RESPONSE)
