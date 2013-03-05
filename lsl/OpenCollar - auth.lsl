@@ -225,7 +225,6 @@ Name2Key(string sFormattedName)
     string url = "http://www.w3.org/services/html2txt?url=";
     string escape = "http://vwrsearch.secondlife.com/client_search.php?session=00000000-0000-0000-0000-000000000000&q=";
     g_kHTTPID = llHTTPRequest(url + llEscapeURL(escape) + llEscapeURL(sName), [], "");
-    // --OLD method below, no longer works in SL - database most likely gone
 }
 
 AuthMenu(key kAv, integer iAuth)
@@ -1156,6 +1155,7 @@ default
         {   //here's where we add owners or secowners, after getting their keys
             if (iStatus == 200)
             {
+		sBody = llList2String(llParseString2List(sBody, ["secondlife:///app/agent/", "/about"], []),1);
                 Debug(sBody);
                 if (isKey(sBody))
                 {
