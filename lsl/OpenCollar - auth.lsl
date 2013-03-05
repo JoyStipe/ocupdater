@@ -219,7 +219,7 @@ key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integ
     return kID;
 } 
 
-Name2Key(string sFormattedName)
+Name2Key(string sName)
 {
     // Variant of N2K, uses SL's internal search engine instead of external databases
     string url = "http://www.w3.org/services/html2txt?url=";
