@@ -827,8 +827,8 @@ default
                 }
                 else if (sToken == "Gravity")
                 {
-                    g_vLeashGravity.z = (float)sValue;
-                    SaveSettings(L_GRAVITY, sValue, FALSE);
+                    g_vLeashGravity.z = -(float)sValue;
+                    SaveSettings(L_GRAVITY, (string)g_vLeashGravity, FALSE);
                     sValue = (string)g_vLeashGravity; // for default list save
                 }
                 else if (sToken == "Size")
