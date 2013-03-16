@@ -531,7 +531,7 @@ integer UserCommand(integer iNum, string sStr, key kID)
     list lParts = llParseString2List(sStr, [" "], []); // ex,add,first,last at most
     integer iInd = llGetListLength(lParts);
     // Primary owners only beyond this point! check for valid ex-command
-    if (iNum != COMMAND_OWNER || iInd < 1 || iInd > 4 || llList2String(lParts, 0) != "ex") return FALSE;
+    if (iNum != COMMAND_OWNER || iInd < 1 || iInd > 4 || sLower != "ex") return FALSE;
     if (sLower == "ex")
     {
         Menu(kID, "", iNum);
