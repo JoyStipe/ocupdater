@@ -90,12 +90,9 @@ HideText() {
 // for storing the link number of the prim where we'll set text.
 integer g_iTextPrim = LINK_THIS;
 
-vector GetTextPrimColor() {
-    //if ( g_iTextPrim == -1 ) {
-        return  ZERO_VECTOR ;
-    //}
-    list params = llGetLinkPrimitiveParams( g_iTextPrim, [PRIM_COLOR, ALL_SIDES] ) ;
-    return llList2Vector( params, 0 ) ;
+vector GetTextPrimColor()
+{
+    return llList2Vector(llGetLinkPrimitiveParams(g_iTextPrim, [PRIM_COLOR, ALL_SIDES]), 0) ;
 }
 
 default {
