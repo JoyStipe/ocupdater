@@ -251,12 +251,7 @@ SetLength(float fIn)
 LeashTo(key kTarget, key kCmdGiver, integer iAuth, list lPoints)
 {
     // can't leash wearer to self.
-    if (kTarget == g_kWearer)
-        return;
-    
-    // TODO: why this??  It seems to have something to do with getting commands from objects.
-    if (kTarget == kCmdGiver && llGetOwnerKey(kCmdGiver) == g_kWearer)
-        return;
+    if (kTarget == g_kWearer) return;
 
     // Send notices to wearer, leasher, and target
     // Only send notices if Leasher is an AV, as objects normally handle their own messages for such things
