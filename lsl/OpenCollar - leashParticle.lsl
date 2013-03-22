@@ -492,6 +492,17 @@ integer isInSimOrJustOutside(vector v)
     return TRUE;
 }
 
+RequestDefaults()
+{
+    string s = "leash";
+    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Texture", NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Size", NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Color", NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Density", NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Gravity", NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Glow", NULL_KEY);
+}
+
 default
 {
     state_entry()
@@ -502,6 +513,7 @@ default
         SetTexture(g_sParticleTexture, NULLKEY);
         llSleep(1.0);
         llMessageLinked(LINK_SET, MENUNAME_RESPONSE, PARENTMENU + "|" + SUBMENU, NULL_KEY);
+        RequestDefaults();
         g_kWearer = llGetOwner();
         //llOwnerSay((string)llGetFreeMemory());
     }
@@ -606,7 +618,7 @@ default
                         g_vLeashGravity = (vector)GetDefaultSetting(L_GRAVITY);
                         g_vLeashSize = (vector)GetDefaultSetting(L_SIZE);
                         g_vLeashColor = (vector)GetDefaultSetting(L_COLOR);
-                        g_bParticleGlow = TRUE;
+                        g_bParticleGlow = (integer)GetDefaultSetting("Glow");
                         g_lSettings = g_lDefaultSettings;
                         Notify(kAv, "Leash-settings restored to collar defaults.", FALSE);
                         // Cleo: as we use standard, no reason to keep the local settings
@@ -802,38 +814,34 @@ default
             if (llGetSubString(sToken, 0, 4) == "leash")
             {
                 debug(sMessage);
-                list lRecievedSettings = llParseString2List(sValue, [","],[]);
-                iIndex = llListFindList(lRecievedSettings, [L_TEXTURE]) + 1;
-                if (iIndex)
+                sToken = llGetSubString(sToken, 5, -1);
+                if (sToken == "Texture")
                 {
-                    string sTemp = llList2String(lRecievedSettings, iIndex);
-                    SetTexture(sTemp, NULLKEY);
-                    SaveSettings(L_TEXTURE, g_sParticleTexture, FALSE);
+                    SetTexture(sValue, NULLKEY);
+                    SaveSettings(L_TEXTURE, sValue, FALSE);
                 }
-                iIndex = llListFindList(lRecievedSettings, [L_DENSITY]) + 1;
-                if (iIndex)
+                else if (sToken == "Density")
                 {
-                    g_fBurstRate = (float)llList2String(lRecievedSettings, iIndex);
-                    SaveSettings(L_DENSITY, (string)g_fBurstRate, FALSE);
+                    g_fBurstRate = (float)sValue;
+                    SaveSettings(L_DENSITY, sValue, FALSE);
                 }
-                iIndex = llListFindList(lRecievedSettings, [L_GRAVITY]) + 1;
-                if (iIndex)
+                else if (sToken == "Gravity")
                 {
-                    g_vLeashGravity.z = (float)llList2String(lRecievedSettings, iIndex);
-                    SaveSettings(L_GRAVITY, (string)g_vLeashGravity.z, FALSE);
+                    g_vLeashGravity.z = -(float)sValue;
+                    SaveSettings(L_GRAVITY, (string)g_vLeashGravity, FALSE);
+                    sValue = (string)g_vLeashGravity; // for default list save
                 }
-                iIndex = llListFindList(lRecievedSettings, [L_SIZE]) + 1;
-                if (iIndex)
+                else if (sToken == "Size")
                 {
-                    g_vLeashSize.x = (float)llList2String(lRecievedSettings, iIndex);
-                    g_vLeashSize.y = (float)llList2String(lRecievedSettings, iIndex);
-                    SaveSettings(L_SIZE, (string)g_vLeashSize.x, FALSE);
+                    g_vLeashSize.x = (float)sValue;
+                    g_vLeashSize.y = (float)sValue;
+                    SaveSettings(L_SIZE, sValue, FALSE);
+                    sValue = (string)g_vLeashSize;
                 }
-                iIndex = llListFindList(lRecievedSettings, [L_COLOR]) + 1;
-                if (iIndex)
+                else if (sToken == "Color")
                 {
-                    g_vLeashColor = (vector)llList2CSV(llList2List(lRecievedSettings, iIndex, iIndex + 2));
-                    SaveSettings(L_COLOR, Vec2String(g_vLeashColor), FALSE);
+                    g_vLeashColor = (vector)sValue;
+                    SaveSettings(L_COLOR, sValue, FALSE);
                 }
                 else if (sToken == "Glow")
                 {
@@ -845,13 +853,13 @@ default
                     {
                         g_bParticleGlow = TRUE;
                     }
-                    SaveDefaultSettings(sToken, (string)g_bParticleGlow);
                 }
                 // in case wearer is currently leashed
                 if (g_kLeashedTo != NULLKEY)
                 {
                     StartParticles(g_kParticleTarget);
                 }
+                SaveDefaultSettings(sToken, sValue);
             }
         }
         else if (iNum == LM_SETTING_EMPTY)
