@@ -181,13 +181,12 @@ default
     state_entry()
     {
         g_kWearer = llGetOwner();
-        g_sPrefix = AutoPrefix();
 
         g_iHUDChan = GetOwnerChannel(g_kWearer, 1111); // persoalized channel for this sub
 
         //llInstantMessage(, "Prefix set to '" + g_sPrefix + "'.", g_kWearer);
         SetListeners();
-        //llMessageLinked(LINK_SET, LM_SETTING_REQUEST, "prefix", NULL_KEY);
+        llMessageLinked(LINK_SET, LM_SETTING_REQUEST, "prefix", NULL_KEY);
         //llMessageLinked(LINK_SET, LM_SETTING_REQUEST, "channel", NULL_KEY);
     }
 
@@ -203,10 +202,10 @@ default
         }
     }
 
-    listen(integer sChan, string sName, key kID, string sMsg)
+    listen(integer iChan, string sName, key kID, string sMsg)
     {
         // new object/HUD channel block
-        if (sChan == g_iHUDChan)
+        if (iChan == g_iHUDChan)
         {
             //check for a ping, if we find one we request auth and answer in LMs with a pong
             if (sMsg==(string)g_kWearer + ":ping")
@@ -230,7 +229,7 @@ default
             }
         }
 
-        else if (sChan == g_iLockMeisterChan)
+        else if (iChan == g_iLockMeisterChan)
         {
             llWhisper(g_iLockMeisterChan,(string)g_kWearer + "collar ok");
         }
@@ -240,7 +239,7 @@ default
             llOwnerSay("You used your safeword, your owner will be notified you did.");
         }
         //added for attachment auth (garvin)
-        else if (sChan == g_iInterfaceChannel)
+        else if (iChan == g_iInterfaceChannel)
         {
             Debug(sMsg);
             //do nothing if wearer isnt owner of the object
@@ -326,14 +325,8 @@ default
                 if (sCommand == "prefix")
                 {
                     string sNewPrefix = llList2String(lParams, 1);
-                    if (sNewPrefix == "auto")
-                    {
-                        g_sPrefix = AutoPrefix();
-                    }
-                    else if (sNewPrefix != "")
-                    {
-                        g_sPrefix = sNewPrefix;
-                    }
+                    if (sNewPrefix == "auto" || sNewPrefix == "") g_sPrefix = AutoPrefix();
+                    else  g_sPrefix = sNewPrefix;
                     SetListeners();
                     Notify(kID, "\n" + llKey2Name(g_kWearer) + "'s prefix is '" + g_sPrefix + "'.\nTouch the collar or say '" + g_sPrefix + "menu' for the main menu.\nSay '" + g_sPrefix + "help' for a list of chat commands.", FALSE);
                     llMessageLinked(LINK_SET, LM_SETTING_SAVE, "prefix=" + g_sPrefix, NULL_KEY);
@@ -452,12 +445,17 @@ default
                 g_sSafeWord = sValue;
                 //                llOwnerSay("Your g_sSafeWord " + g_sSafeWord + " was loaded from the httpdb.");
             }
+            else if (sToken == "notify") // Auth will use for notifies requiring prefix
+            {
+                integer i = llSubStringIndex(sValue, "\"");
+                string msg = llGetSubString(sValue, 0, i) + g_sPrefix + llGetSubString(sValue, i + 1, -1);
+                Notify(kID, msg, FALSE);
+            }
         }
-        //        else if (iNum == LM_SETTING_EMPTY && sStr == "prefix")
-        //        {
-        //            SetListeners();
-        //            Notify(g_kWearer, "\nPrefix set to '" + g_sPrefix + "'.\nTouch the collar or say '" + g_sPrefix + "menu' for the main menu.\nSay '" + g_sPrefix + "help' for a list of chat commands.");
-        //        }
+        else if (iNum == LM_SETTING_EMPTY && sStr == "prefix")
+        {
+            g_sPrefix = AutoPrefix();
+        }
         else if (iNum == POPUP_HELP)
         {
             //replace _PREFIX_ with prefix, and _CHANNEL_ with (strin) channel
