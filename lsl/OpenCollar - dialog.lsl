@@ -130,7 +130,7 @@ Notify(key keyID, string sMsg, integer nAlsoNotifyWearer)
     }
     else
     {
-        llInstantMessage(keyID, sMsg);
+        llRegionSayTo(keyID, sMsg);
         if (nAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
