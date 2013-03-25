@@ -22,6 +22,8 @@ string g_sOwnersToken = "owner";
 string g_sSecOwnersToken = "secowners";
 string g_sBlackListToken = "blacklist";
 
+string g_sPrefix;
+
 //dialog handlers
 key g_kAuthMenuID;
 key g_kSensorMenuID;
@@ -163,28 +165,17 @@ list AddUniquePerson(list lContainer, key kID, string sName, string sType)
     {   //owner is already in list.  just replace the name
         lContainer = llListReplaceList(lContainer, [sName], iIndex + 1, iIndex + 1);
     }
-    string msg;
+
     if (kID != g_kWearer)
     {
-	    Notify(g_kWearer, "Added " + sName + " to " + sType + ".", FALSE);
+        Notify(g_kWearer, "Added " + sName + " to " + sType + ".", FALSE);
         if (sType == "owner")
         {
-            msg = "notify=Your owner can have a lot of power over you and you consent to that by making them your ";
-            msg += "owner on your collar. They can leash you, put you in poses, lock your collar, see your location ";
-            msg += "and what you say in local chat.  If you are using RLV they can  undress you, make you wear clothes, ";
-            msg += "restrict your  chat, IMs and TPs as well as force TP you anywhere they like. Please read the help ";
-            msg += "for more info. If you do not consent, you can use the command \"" + "runaway\" to remove all ";
-            msg += "owners from the collar.";
-            llMessageLinked(LINK_SET, LM_SETTING_RESPONSE, msg, g_kWearer);
+            Notify(g_kWearer, "Your owner can have a lot  power over you and you consent to that by making them your owner on your collar. They can leash you, put you in poses, lock your collar, see your location and what you say in local chat.  If you are using RLV they can  undress you, make you wear clothes, restrict your  chat, IMs and TPs as well as force TP you anywhere they like. Please read the help for more info. If you do not consent, you can use the command \"" + g_sPrefix + "runaway\" to remove all owners from the collar.", FALSE);
         }
     }
 
-    if (sType == "owner" || sType == "secowner")
-    {
-        msg = "notify=You have been added to the " + sType + " list on " + llKey2Name(g_kWearer) + "'s collar.\nFor ";
-        msg += "help concerning the collar usage either say \"" + "help\" in chat or go to " + g_sWikiURL + " .";
-        llMessageLinked(LINK_SET, LM_SETTING_RESPONSE, msg, kID);
-    }
+    if (sType == "owner" || sType == "secowner") Notify(kID, "You have been added to the " + sType + " list on " + llKey2Name(g_kWearer) + "'s collar.\nFor help concerning the collar usage either say \"" + g_sPrefix + "help\" in chat or go to " + g_sWikiURL + " .",FALSE);
     return lContainer;
 }
 
@@ -195,14 +186,14 @@ NewPerson(key kID, string sName, string sType)
         g_lOwners = AddUniquePerson(g_lOwners, kID, sName, g_sRequestType);
         llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sOwnersToken + "=" + llDumpList2String(g_lOwners, ","), "");
         //added for attachment interface to announce owners have changed
-	sendToAttachmentInterface("OwnerChange");
+    sendToAttachmentInterface("OwnerChange");
     }
     else if (sType == "secowner")
     {
         g_lSecOwners = AddUniquePerson(g_lSecOwners, kID, sName, g_sRequestType);
         llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sSecOwnersToken + "=" + llDumpList2String(g_lSecOwners, ","), "");
         //added for attachment interface to announce owners have changed
-	sendToAttachmentInterface("OwnerChange");
+    sendToAttachmentInterface("OwnerChange");
     }
     else if (sType == "blacklist")
     {
@@ -224,7 +215,7 @@ Name2Key(string sName)
     // Variant of N2K, uses SL's internal search engine instead of external databases
     string url = "http://www.w3.org/services/html2txt?url=";
     string escape = "http://vwrsearch.secondlife.com/client_search.php?session=00000000-0000-0000-0000-000000000000&q=";
-    g_kHTTPID = llHTTPRequest(url + llEscapeURL(escape) + llEscapeURL(sName), [], "");
+    g_kHTTPID = llHTTPRequest(url + llEscapeURL(escape) + llEscapeURL(sName), [], ""); 
 }
 
 AuthMenu(key kAv, integer iAuth)
@@ -387,7 +378,7 @@ list RemovePerson(list lPeople, string sName, string sToken, key kCmdr)
                 }
             }
             //whisper to attachments about owner and secowner changes
-	    sendToAttachmentInterface("OwnerChange");
+        sendToAttachmentInterface("OwnerChange");
         }
         //save to db
         if (llGetListLength(lPeople)>0)
@@ -706,7 +697,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
                 AuthMenu(kID, iNum);
             }
             //added for attachment interface to announce owners have changed
-	    sendToAttachmentInterface("OwnerChange");
+        sendToAttachmentInterface("OwnerChange");
         }
         else if (sCommand == "setopenaccess")
         {
@@ -718,7 +709,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
                 g_iRemenu = FALSE;
                 AuthMenu(kID, iNum);
             }
-	    sendToAttachmentInterface("OwnerChange");
+        sendToAttachmentInterface("OwnerChange");
         }
         else if (sCommand == "unsetopenaccess")
         {
@@ -731,7 +722,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
                 AuthMenu(kID, iNum);
             }
             //added for attachment interface to announce owners have changed
-	    sendToAttachmentInterface("OwnerChange");
+        sendToAttachmentInterface("OwnerChange");
         }
         else if (sCommand == "setlimitrange")
         {
@@ -764,13 +755,25 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
     }
     return TRUE;
 }
-
+SetPrefix(string sValue)
+{
+    if (sValue != "auto" && sValue != "") g_sPrefix = sValue;
+    else
+    {
+        list name = llParseString2List(llKey2Name(g_kWearer), [" "], []);
+        string init = llGetSubString(llList2String(name, 0), 0, 0);
+        init += llGetSubString(llList2String(name, 1), 0, 0);
+        g_sPrefix = llToLower(init);
+    }
+}
 default
 {
     state_entry()
     {   //until set otherwise, wearer is owner
         Debug((string)llGetFreeMemory());
         g_kWearer = llGetOwner();
+        list sName = llParseString2List(llKey2Name(g_kWearer), [" "], []);
+        SetPrefix("");
         //added for attachment auth
         g_iInterfaceChannel = (integer)("0x" + llGetSubString(g_kWearer,30,-1));
         if (g_iInterfaceChannel > 0) g_iInterfaceChannel = -g_iInterfaceChannel;
@@ -818,6 +821,7 @@ default
             {
                 llMessageLinked(LINK_SET, iAuth, sStr, kID);
             }
+
             Debug("noauth: " + sStr + " from " + (string)kID + " who has auth " + (string)iAuth);
             return; // NOAUTH messages need go no further
         }
@@ -880,6 +884,17 @@ default
             {
                 g_lBlackList = llParseString2List(sValue, [","], [""]);
             }
+            else if (sToken == "prefix")
+            {
+                SetPrefix(sValue);
+            }
+        }
+        else if (iNum == LM_SETTING_SAVE)
+        {
+            list lParams = llParseString2List(sStr, ["="], []);
+            string sToken = llList2String(lParams, 0);
+            string sValue = llList2String(lParams, 1);
+            if (sToken == "prefix") SetPrefix(sValue);
         }
         else if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu)
         {
@@ -897,7 +912,7 @@ default
                 Notify(kOwner, "Your sub " + sSubName + " has used the safeword. Please check on " + sSubFirstName +"'s well-being and if further care is required.",FALSE);
             }
             //added for attachment interface (Garvin)
-	    sendToAttachmentInterface("safeword");
+        sendToAttachmentInterface("safeword");
         }
         //added for attachment auth (Garvin)
         else if (iNum == ATTACHMENT_REQUEST)
@@ -1010,7 +1025,6 @@ default
                     else if (sMessage == g_sReset)
                     { // separate routine
                         llMessageLinked(LINK_SET, COMMAND_NOAUTH, "runaway", kAv);
-                        return; // do not pop up a menu that will not work because auth plugin resets just after. Quick fix for issue 1515, before we do deeper changes.
                     }
                     AuthMenu(kAv, iAuth);
                 }
@@ -1105,7 +1119,7 @@ default
             for(i = 0; i < iNum_detected; i++)
             {
                 sName = llDetectedName(i);
-		//actual label length is taken care of by dialog helper
+        //actual label length is taken care of by dialog helper
                 lButtons += [sName];
             }
             //add wearer if not already in button list
@@ -1155,7 +1169,7 @@ default
         {   //here's where we add owners or secowners, after getting their keys
             if (iStatus == 200)
             {
-		sBody = llList2String(llParseString2List(sBody, ["secondlife:///app/agent/", "/about"], []),1);
+                sBody = llList2String(llParseString2List(sBody, ["secondlife:///app/agent/", "/about"], []),1);
                 Debug(sBody);
                 if (isKey(sBody))
                 {
