@@ -110,10 +110,16 @@ SetListeners()
 
 }
 
-string AutoPrefix()
+SetPrefix(string sValue)
 {
-    list sName = llParseString2List(llKey2Name(g_kWearer), [" "], []);
-    return llToLower(llGetSubString(llList2String(sName, 0), 0, 0)) + llToLower(llGetSubString(llList2String(sName, 1), 0, 0));
+    if (sValue != "auto" && sValue != "") g_sPrefix = sValue;
+    else
+    {
+        list name = llParseString2List(llKey2Name(g_kWearer), [" "], []);
+        string init = llGetSubString(llList2String(name, 0), 0, 0);
+        init += llGetSubString(llList2String(name, 1), 0, 0);
+        g_sPrefix = llToLower(init);
+    }
 }
 
 string StringReplace(string sSrc, string sFrom, string sTo)
@@ -145,14 +151,13 @@ integer StartsWith(string sHayStack, string sNeedle) // http://wiki.secondlife.c
     return llDeleteSubString(sHayStack, llStringLength(sNeedle), -1) == sNeedle;
 }
 
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
-    if (kID == g_kWearer) {
-        llOwnerSay(sMsg);
-    } else {
-            llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) {
-            llOwnerSay(sMsg);
-        }
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer) llOwnerSay(sMsg);
+    else
+    {
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer) llOwnerSay(sMsg);
     }
 }
 
@@ -181,10 +186,8 @@ default
     state_entry()
     {
         g_kWearer = llGetOwner();
-
+        SetPrefix("");
         g_iHUDChan = GetOwnerChannel(g_kWearer, 1111); // persoalized channel for this sub
-
-        //llInstantMessage(, "Prefix set to '" + g_sPrefix + "'.", g_kWearer);
         SetListeners();
         llMessageLinked(LINK_SET, LM_SETTING_REQUEST, "prefix", NULL_KEY);
         //llMessageLinked(LINK_SET, LM_SETTING_REQUEST, "channel", NULL_KEY);
@@ -324,9 +327,7 @@ default
             {
                 if (sCommand == "prefix")
                 {
-                    string sNewPrefix = llList2String(lParams, 1);
-                    if (sNewPrefix == "auto" || sNewPrefix == "") g_sPrefix = AutoPrefix();
-                    else  g_sPrefix = sNewPrefix;
+                    SetPrefix(llList2String(lParams, 1));
                     SetListeners();
                     Notify(kID, "\n" + llKey2Name(g_kWearer) + "'s prefix is '" + g_sPrefix + "'.\nTouch the collar or say '" + g_sPrefix + "menu' for the main menu.\nSay '" + g_sPrefix + "help' for a list of chat commands.", FALSE);
                     llMessageLinked(LINK_SET, LM_SETTING_SAVE, "prefix=" + g_sPrefix, NULL_KEY);
@@ -419,9 +420,7 @@ default
             string sValue = llList2String(lParams, 1);
             if (sToken == "prefix")
             {
-                //prefix is the only token for which the httpdb will send a blank value, just so that
-                //this script can know it's time to send the helpful popup.
-                g_sPrefix = sValue;
+                SetPrefix(sValue);
                 //llInstantMessage(g_kWearer, "Loaded prefix " + g_sPrefix + " from database.");
                 SetListeners();
                 //Notify(g_kWearer "\nPrefix set to '" + g_sPrefix + "'.\nTouch the collar or say '" + g_sPrefix + "menu' for the main menu.\nSay '" + g_sPrefix + "help' for a list of chat commands.");
@@ -445,17 +444,11 @@ default
                 g_sSafeWord = sValue;
                 //                llOwnerSay("Your g_sSafeWord " + g_sSafeWord + " was loaded from the httpdb.");
             }
-            else if (sToken == "notify") // Auth will use for notifies requiring prefix
-            {
-                integer i = llSubStringIndex(sValue, "\"");
-                string msg = llGetSubString(sValue, 0, i) + g_sPrefix + llGetSubString(sValue, i + 1, -1);
-                Notify(kID, msg, FALSE);
-            }
         }
-        else if (iNum == LM_SETTING_EMPTY && sStr == "prefix")
-        {
-            g_sPrefix = AutoPrefix();
-        }
+//        else if (iNum == LM_SETTING_EMPTY && sStr == "prefix")
+//        {
+//            SetPrefix("");
+//        }
         else if (iNum == POPUP_HELP)
         {
             //replace _PREFIX_ with prefix, and _CHANNEL_ with (strin) channel
