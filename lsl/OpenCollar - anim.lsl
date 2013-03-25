@@ -530,7 +530,11 @@ integer UserCommand(integer iNum, string sStr, key kID)
     }
     else if(sCommand == "ao")
     {
-        if(sValue == "off")
+        if(sValue == "" || sValue == "menu")
+        {
+            AOMenu(kID, iNum);
+        }
+        else if(sValue == "off")
         {
             llWhisper(g_iInterfaceChannel, "CollarCommand|" + (string)iNum + "|ZHAO_AOOFF" + "|" + (string)kID);
             llWhisper(g_iAOChannel,"ZHAO_AOOFF");
@@ -539,10 +543,6 @@ integer UserCommand(integer iNum, string sStr, key kID)
         {
             llWhisper(g_iInterfaceChannel, "CollarCommand|" + (string)iNum + "|ZHAO_AOON" + "|" + (string)kID);
             llWhisper(g_iAOChannel,"ZHAO_AOON");
-        }
-        else if(sValue == "menu")
-        {
-            AOMenu(kID, iNum);
         }
         else if (sValue == "lock")
         {
