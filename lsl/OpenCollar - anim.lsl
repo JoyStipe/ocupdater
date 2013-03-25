@@ -125,7 +125,7 @@ key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integ
     llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" 
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
     return kID;
-} 
+}
 
 AnimMenu(key kID, integer iAuth)
 {
@@ -168,10 +168,10 @@ AnimMenu(key kID, integer iAuth)
     }
 }
 
-AOMenu(key kID, integer iAuth)  // SA: why is this function here? shouldn't it do something?
+AOMenu(key kID, integer iAuth) // wrapper to send menu back to the AO's menu
 {
-    string sPrompt = "Choose an option.";
-
+    llWhisper(g_iInterfaceChannel, "CollarCommand|" + (string)iAuth + "|" + AO_MENU + "|" + (string)kID);
+    llWhisper(g_iAOChannel, AO_MENU + "|" + (string)kID);
 }
 
 PoseMenu(key kID, integer iPage, integer iAuth)
@@ -398,9 +398,6 @@ CreateAnimList()
 
 integer UserCommand(integer iNum, string sStr, key kID)
 {
-    // SA: TODO delete this when transition is finished
-    if (iNum == COMMAND_NOAUTH) {llMessageLinked(LINK_SET, iNum, sStr, kID); return TRUE;}
-    // /SA
     if (iNum == COMMAND_EVERYONE) return TRUE;  // No command for people with no privilege in this plugin.
     else if (iNum > COMMAND_EVERYONE || iNum < COMMAND_OWNER) return FALSE; // sanity check
 
@@ -444,7 +441,7 @@ integer UserCommand(integer iNum, string sStr, key kID)
         llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sAnimToken, "");
         llResetScript();
     }
-    else if (sStr == "pose")
+    if (sStr == "pose")
     {  //do multi page menu listing anims
         PoseMenu(kID, 0, iNum);
     }
@@ -533,7 +530,7 @@ integer UserCommand(integer iNum, string sStr, key kID)
     }
     else if(sCommand == "ao")
     {
-        if(sValue == "")
+        if(sValue == "" || sValue == "menu")
         {
             AOMenu(kID, iNum);
         }
@@ -546,11 +543,6 @@ integer UserCommand(integer iNum, string sStr, key kID)
         {
             llWhisper(g_iInterfaceChannel, "CollarCommand|" + (string)iNum + "|ZHAO_AOON" + "|" + (string)kID);
             llWhisper(g_iAOChannel,"ZHAO_AOON");
-        }
-        else if(sValue == "menu")
-        {
-            llWhisper(g_iInterfaceChannel, "CollarCommand|" + (string)iNum + "|" + AO_MENU + "|" + (string)kID);
-            llWhisper(g_iAOChannel, AO_MENU + "|" + (string)kID);
         }
         else if (sValue == "lock")
         {
@@ -738,7 +730,7 @@ default
                 key kAv = (key)llList2String(lMenuParams, 0);
                 string sMessage = llList2String(lMenuParams, 1);
                 integer iPage = (integer)llList2String(lMenuParams, 2);
-        integer iAuth = llList2Integer(lMenuParams, 3);
+                integer iAuth = llList2Integer(lMenuParams, 3);
                 string sMenuType = llList2String(g_lMenuIDs, iMenuIndex + 1);
                 //remove stride from g_lMenuIDs
                 //we have to subtract from the index because the dialog id comes in the middle of the stride
@@ -758,25 +750,18 @@ default
                     {
                         Notify(kAv, "Attempting to trigger the AO menu.  This will only work if " + llKey2Name(g_kWearer) + " is wearing the OpenCollar Sub AO.", FALSE);
                         AOMenu(kAv, iAuth);
-                        //llSay(g_iInterfaceChannel, AO_MENU + "|" + (string)kID);
-                        //                llMessageLinked(LINK_SET, COMMAND_NOAUTH, "triggerao", kID);
                     }
                     else if (sMessage == g_sGiveAO)
                     {    //queue a delivery
                         DeliverAO(kAv);
-                        AOMenu(kAv, iAuth);
                     }
                     else if(sMessage == "AO ON")
                     {
                         UserCommand(iAuth, "ao on", kAv);
-                        //llSay(g_iInterfaceChannel, "ZHAO_AOON" + "|" + (string)kID);
-                        AOMenu(kAv, iAuth);
                     }
                     else if(sMessage == "AO OFF" )
                     {
                         UserCommand(iAuth, "ao off", kAv);
-                        //llSay(g_iInterfaceChannel, "ZHAO_AOOFF" + "|" + (string)kID);
-                        AOMenu(kAv, iAuth);
                     }
                     else if(llGetSubString(sMessage, llStringLength(TICKED), -1) == ANIMLOCK)
                     {
