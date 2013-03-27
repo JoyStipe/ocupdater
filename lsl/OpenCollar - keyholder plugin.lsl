@@ -665,9 +665,9 @@ integer UserCommand(integer num, string str, key id) // here iNum: auth value, s
     }
     else if ((id == g_keyWearer || num == COMMAND_OWNER) && str == "resetscripts") llResetScript();
     // after here, only primary owner commands
-    if (num != COMMAND_OWNER)
+    else if (num != COMMAND_OWNER)
     {
-        // Notify(id, "That command can only be accessed by an Owner.", FALSE);
+        Notify(id, "That command can only be accessed by an Owner.", FALSE);
         return TRUE;
     }
     else if (llGetSubString(str, 0, 6) == "khtime " )
