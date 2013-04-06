@@ -143,6 +143,17 @@ integer WEARERLOCKOUT=620;
 string UPMENU = "^";
 string MORE = ">";
 
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
     if (kID == g_kWearer)
@@ -783,37 +794,25 @@ default
             if (g_iRealRunning || g_iRealRunning)
                 Notify(kID , "You are locked out of the " + g_sToyName + " until the timer expires", FALSE);
         }
-        else if (iNum == LM_SETTING_DELETE )
-        {
-            if (sStr == "leashedto")
-            {
-                g_iWhoCanChangeLeash=504;
-            }
-        }
         else if (iNum == LM_SETTING_DELETE)
         {
-            if (sStr == "locked")
-            {
-                g_iCollarLocked=0;
-            }
+            if (sStr == "leash_leashedto") g_iWhoCanChangeLeash = 504;
+            else if (sStr == "Global_locked") g_iCollarLocked=0;
         }
         else if (iNum == LM_SETTING_SAVE)
         {
-            if (llGetSubString(sStr, 0, 8) == "leashedto")
+            list lParams = llParseString2List(sStr, ["="], []);
+            string token = llList2String(lParams, 0);
+            string value = llList2String(lParams, 1);
+            if (token == "Global_locked" && (integer)value == 1) g_iCollarLocked = 1;
+            else if (token == "leash_leashedto")
             {
-                integer temp = llList2Integer( llParseString2List( sStr , [","] , [] ) , 1 );
-                if (temp < g_iWhoCanChangeLeash)
+                integer auth = (integer)llList2String(llParseString2List(value, [","], []), 1);
+                if (auth < g_iWhoCanChangeLeash)
                 {
-                    g_iWhoCanChangeLeash=temp;
-                    g_iUnleash=0;
+                    g_iWhoCanChangeLeash = auth;
+                    g_iUnleash = 0;
                 }
-            }
-        }
-        else if (iNum == LM_SETTING_SAVE)
-        {
-            if (sStr == "locked=1")
-            {
-                g_iCollarLocked=1;
             }
         }
         else if (iNum == LM_SETTING_RESPONSE)
@@ -821,10 +820,7 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if (sToken == "locked")
-            {
-                g_iCollarLocked=(integer)sValue;
-            }
+            if (sToken == "Global_locked") g_iCollarLocked=(integer)sValue;
         }
         else if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu)
             // our parent menu requested to receive buttons, so send ours
@@ -976,5 +972,4 @@ default
         }
         g_iLastTime=g_iCurrentTime;
     }
-
 }

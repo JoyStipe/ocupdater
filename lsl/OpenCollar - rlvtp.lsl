@@ -13,7 +13,6 @@ list g_lOwners;
 
 string g_sParentMenu = "RLV";
 string g_sSubMenu = "Map/TP";
-string g_sDBToken = "rlvtp";
 
 string g_sLatestRLVersionSupport = "1.15.1"; //the version which brings the latest used feature to check against
 string g_sDetectedRLVersion;
@@ -99,7 +98,17 @@ Debug(string sMsg)
 {
     //llOwnerSay(llGetScriptName() + ": " + sMsg);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
     if (kID == g_kWearer) {
         llOwnerSay(sMsg);
@@ -252,14 +261,15 @@ UpdateSettings()
 
 SaveSettings()
 {
+    string token = GetScriptID() + "List";
     //save to DB
     if (llGetListLength(g_lSettings)>0)
     {
-        llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
+        llMessageLinked(LINK_SET, LM_SETTING_SAVE, token + "=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
     }
     else
     {
-        llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
+        llMessageLinked(LINK_SET, LM_SETTING_DELETE, token, NULL_KEY);
     }
 }
 
@@ -268,7 +278,7 @@ ClearSettings()
     //clear settings list
     g_lSettings = [];
     //remove tpsettings from DB... now done by httpdb itself
-    llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "List", NULL_KEY);
     //main RLV script will take care of sending @clear to viewer
     //avoid race conditions
     llSleep(1.0);
@@ -407,7 +417,7 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if (sToken == g_sDBToken)
+            if (sToken == GetScriptID() + "List")
             {
                 //throw away first element
                 //everything else is real settings (should be even number)

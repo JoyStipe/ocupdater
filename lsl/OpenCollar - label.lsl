@@ -8,7 +8,7 @@ string g_sFontMenu = "Font";
 key g_kWearer;
 
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "AppLock";
+string g_sAppLockToken = "Appearance_Lock";
 
 //opencollar MESSAGE MAP
 integer COMMAND_NOAUTH = 0;
@@ -38,14 +38,13 @@ integer DIALOG_TIMEOUT = -9002;
 
 integer g_iCharLimit = 12;
 
-//string UPMENU = "â†‘";
-//string MORE = "â†’";
+//string UPMENU = "â� ‘";
+//string MORE = "â� ’";
 string UPMENU = "^";
 
 key g_kDialogID;
 
 string g_sLabelText = "OpenCollar";
-string g_sDesignPrefix;
 
 list g_lDesignRot = ["oc_", <0.0, 0.0, -0.992462, 0.122556>];//strided list of default rotations for label prim 0, by dbprefix
 float g_iRotIncrement = 11.75;
@@ -138,7 +137,17 @@ key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integ
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
     return kID;
 } 
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 FontMenu(key kID, integer iAuth)
 {
     list lButtons=llList2ListStrided(g_lFonts,0,-1,2);
@@ -154,13 +163,13 @@ ResetCharIndex() {
 
     // special UTF-8 chars for European languages // SALAHZAR special chars according to a selection from CP850
     // these 80 chars correspond to the following chars in CP850 codepage: (some are not viewable in editor)
-    // rows(11)="Ã‡Ã¼Ã©Ã¢Ã¤Ã Ã¥Ã§ÃªÃ«"
-    // rows(12)="Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã†â—„"
+    // rows(11)="Ã‡Ã¼Ã©Ã¢Ã¤Ã� Ã¥Ã§ÃªÃ«"
+    // rows(12)="Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã� â—„"
     // rows(13)="Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÂ¢Â£Â¥"
     // rows(14)="â‚§Æ’Ã¡Ã­Ã³ÃºÃ±Ã‘ÂªÂº"
     // rows(15)="Â¿âŒÂ¬Â½Â¼Â¡Â«Â»Î±ÃŸ"
     // rows(16)="Î“Ï€Î£ÏƒÂµÏ„Î¦Î˜Î©Î´"
-    // rows(17)="âˆžÏ†Îµâˆ©â‰¡Â±â‰¥â‰¤âŒ âŒ¡"
+    // rows(17)="âˆžÏ� Îµâˆ©â‰¡Â±â‰¥â‰¤âŒ� âŒ¡"
     // rows(18)="Ã·â‰ˆÂ°âˆ™Â·âˆšâ¿Â²â‚¬ "
     g_lDecode= [ "%C3%87", "%C3%BC", "%C3%A9", "%C3%A2", "%C3%A4", "%C3%A0", "%C3%A5", "%C3%A7", "%C3%AA", "%C3%AB" ];
     g_lDecode+=[ "%C3%A8", "%C3%AF", "%C3%AE", "%C3%AC", "%C3%84", "%C3%85", "%C3%89", "%C3%A6", "%C3%AE", "xxxxxx" ];
@@ -223,7 +232,8 @@ integer GetIndex(string sChar)
 // END SALAHZAR
 
 
-RenderString(integer iLink, string sStr) {
+RenderString(integer iLink, string sStr)
+{
     // Get the grid positions for each pair of characters.
     vector GridOffset1 = GetGridOffset( GetIndex(llGetSubString(sStr, 0, 0)) ); // SALAHZAR intermediate function
 
@@ -265,8 +275,10 @@ GetLabelPrim(string sData)
             integer iCharPosition = (integer)llList2String(lTmp,1);
             RenderString(i, llGetSubString(sData, iCharPosition, iCharPosition));
 
+            // --- This ought to be redone, required old web databse ---
             //rotate label prims depending on num of chars
-            integer iIndex = llListFindList(g_lDesignRot, [g_sDesignPrefix]);
+            string design = llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
+            integer iIndex = llListFindList(g_lDesignRot, [design]);
             if (iIndex != -1)//only correct for rotation if this design has an entry in g_lDesignRot
             {
                 rotation rDefaultLabelRot = llList2Rot(g_lDesignRot, iIndex + 1);
@@ -322,7 +334,6 @@ default
         g_kWearer = llGetOwner();
 
         ResetCharIndex();
-        g_sDesignPrefix = llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
 
         g_sLabelText = llList2String(llParseString2List(llKey2Name(llGetOwner()), [" "], []), 0);
         //SetLabel(g_sLabelText); // do it after all settings are in.
@@ -377,7 +388,7 @@ default
                 {
                     lParams = llDeleteSubList(lParams, 0, 0);
                     g_sLabelText = llDumpList2String(lParams, " ");
-                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, "label=" + g_sLabelText, NULL_KEY);
+                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "Text=" + g_sLabelText, NULL_KEY);
                     SetLabel(g_sLabelText);
                 }
             }
@@ -422,16 +433,11 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if (sToken == "label")
+            if (PeelToken(sToken, 0) == GetScriptID())
             {
-                g_sLabelText = sValue;
-                //SetLabel(g_sLabelText); // do it after all settings are in.
-                //llInstantMessage(llGetOwner(), "Loaded label " + sValue + " from database.");
-            }
-            else if (sToken == g_sDesignPrefix + "font")
-            {
-                g_kFontTexture = (key)sValue;
-                //SetLabel(g_sLabelText); // do it after all settings are in.
+                sToken = PeelToken(sToken, 1);
+                if (sToken == "Text") g_sLabelText = sValue;
+                else if (sToken == "Font") g_kFontTexture = (key)sValue;
             }
             else if (sToken == g_sAppLockToken)
             {
@@ -448,7 +454,7 @@ default
         /* //no more needed
             else if (iNum == COMMAND_WEARER && sStr == "reset")
             {
-                llMessageLinked(LINK_SET, LM_SETTING_DELETE, "label", NULL_KEY);
+                llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "label", NULL_KEY);
                 llResetScript();
             }
         */
@@ -485,7 +491,7 @@ default
                     {
                         g_kFontTexture = (key)llList2String(g_lFonts, iIndex + 1);
                         SetLabel(g_sLabelText);
-                        llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDesignPrefix + "font=" + (string)g_kFontTexture, NULL_KEY);
+                        llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "Font=" + (string)g_kFontTexture, NULL_KEY);
                     }
                     FontMenu(kAv, iAuth);
                 }

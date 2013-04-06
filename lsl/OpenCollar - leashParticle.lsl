@@ -154,7 +154,17 @@ debug(string sText)
 {
     //llOwnerSay(llGetScriptName() + " DEBUG: " + sText);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 FindLinkedPrims()
 {
     integer linkcount = llGetNumberOfPrims();
@@ -317,11 +327,9 @@ SaveSettings(string sToken, string sSave, integer bSaveToLocal)
     {
         g_lSettings = g_lSettings + [sToken, sSave];
     }
-    //sToSave = sToSave + llList2CSV(g_lSettings);
     if (bSaveToLocal)
     {
-        string sToSave = "leash=" + llDumpList2String(g_lSettings, ",");
-        llMessageLinked(LINK_THIS, LM_SETTING_SAVE, sToSave, NULLKEY);
+        llMessageLinked(LINK_THIS, LM_SETTING_SAVE, GetScriptID() + sToken + "=" + sSave, NULLKEY);
     }
 }
 
@@ -492,17 +500,6 @@ integer isInSimOrJustOutside(vector v)
     return TRUE;
 }
 
-RequestDefaults()
-{
-    string s = "leash";
-    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Texture", NULL_KEY);
-    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Size", NULL_KEY);
-    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Color", NULL_KEY);
-    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Density", NULL_KEY);
-    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Gravity", NULL_KEY);
-    llMessageLinked(LINK_SET, LM_SETTING_REQUEST, s + "Glow", NULL_KEY);
-}
-
 default
 {
     state_entry()
@@ -513,9 +510,14 @@ default
         SetTexture(g_sParticleTexture, NULLKEY);
         llSleep(1.0);
         llMessageLinked(LINK_SET, MENUNAME_RESPONSE, PARENTMENU + "|" + SUBMENU, NULL_KEY);
-        RequestDefaults();
         g_kWearer = llGetOwner();
         //llOwnerSay((string)llGetFreeMemory());
+        SetTexture("chain", NULLKEY);
+        if (g_kLeashedTo != NULLKEY)
+        {
+            debug ("entry leash targeted");
+            StartParticles(g_kParticleTarget);
+        }
     }
     on_rez(integer iRez)
     {
@@ -536,6 +538,7 @@ default
             }
             else
             {
+                debug("leash active");
                 if (g_bInvisibleLeash)
                 {// only start the sensor for the leasher
                     g_bLeasherInRange = TRUE;
@@ -622,7 +625,7 @@ default
                         g_lSettings = g_lDefaultSettings;
                         Notify(kAv, "Leash-settings restored to collar defaults.", FALSE);
                         // Cleo: as we use standard, no reason to keep the local settings
-                        llMessageLinked(LINK_SET, LM_SETTING_DELETE, "leash", NULL_KEY);
+                        llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "all", NULL_KEY);
                         if (!g_bInvisibleLeash && g_bLeashActive)
                         {
                             StartParticles(g_kParticleTarget);
@@ -807,14 +810,17 @@ default
         }
         else if (iNum == LM_SETTING_RESPONSE)
         {
-            //debug("LocalSettingsResponse: " + sMessage);
-            integer iIndex = llSubStringIndex(sMessage, "=");
-            string sToken = llGetSubString(sMessage, 0, iIndex -1);
-            string sValue = llGetSubString(sMessage, iIndex + 1, -1);
-            if (llGetSubString(sToken, 0, 4) == "leash")
+            debug ("LocalSettingsResponse: " + sMessage);
+            integer i = llSubStringIndex(sMessage, "=");
+            string sToken = llGetSubString(sMessage, 0, i - 1);
+            string sValue = llGetSubString(sMessage, i + 1, -1);
+            if (sToken == "leash_leashedto")
             {
-                debug(sMessage);
-                sToken = llGetSubString(sToken, 5, -1);
+                g_kLeashedTo = (key)llList2String(llParseString2List(sValue, [","], []), 0);
+            }
+            else if (PeelToken(sToken, 0) == GetScriptID())
+            {
+                sToken = PeelToken(sToken, 1);
                 if (sToken == "Texture")
                 {
                     SetTexture(sValue, NULLKEY);
@@ -845,33 +851,22 @@ default
                 }
                 else if (sToken == "Glow")
                 {
-                    if (llToLower(sValue) == "off")
-                    {
-                        g_bParticleGlow = FALSE;
-                    }
-                    else
-                    {
-                        g_bParticleGlow = TRUE;
-                    }
+                    if (llToLower(sValue) == "off") g_bParticleGlow = FALSE;
+                    else g_bParticleGlow = TRUE;
                 }
-                // in case wearer is currently leashed
-                if (g_kLeashedTo != NULLKEY)
-                {
-                    StartParticles(g_kParticleTarget);
-                }
-                SaveDefaultSettings(sToken, sValue);
             }
-        }
-        else if (iNum == LM_SETTING_EMPTY)
-        {
-            //debug("HTTPDB EMPTY");
-            if (sMessage == ("leash" + L_TEXTURE)) // no designer-set texture
+            // in case wearer is currently leashed
+            if (g_kLeashedTo != NULLKEY)
             {
-                SetTexture("chain", NULLKEY);
-                if (g_kLeashedTo != NULLKEY)
-                {
-                    StartParticles(g_kParticleTarget);
-                }
+                StartParticles(g_kParticleTarget);
+            }
+            SaveDefaultSettings(sToken, sValue);
+        }
+        else if (iNum == LM_SETTING_DELETE)
+        {
+            if (sMessage == "leash_leashedto")
+            {
+                StopParticles(TRUE);
             }
         }
     }

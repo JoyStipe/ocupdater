@@ -133,7 +133,17 @@ debug(string sStr)
 }
 
 integer g_iUnixTime;
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 // RLV-Force avatar to face the leasher by Tapple Gao
 turnToTarget(vector target)
 {
@@ -314,7 +324,6 @@ LeashTo(key kTarget, key kCmdGiver, integer iAuth, list lPoints)
             g_bLeashedToAvi = TRUE;
         }
     }
-    llMessageLinked(LINK_SET, LM_SETTING_SAVE, TOK_DEST + "=" + (string)kTarget + "," + (string)iAuth + "," + (string)g_bLeashedToAvi + "," + (string)g_bFollowMode, NULL_KEY);
     DoLeash(kTarget, iAuth, lPoints, g_bFollowMode);
     
     // Notify Target how to unleash, only if:
@@ -369,7 +378,6 @@ Follow(key kTarget, key kCmdGiver, integer iAuth)
             g_bLeashedToAvi = TRUE;
         }
     }
-    llMessageLinked(LINK_SET, LM_SETTING_SAVE, TOK_DEST + "=" + (string)kTarget + "," + (string)iAuth + "," + (string)g_bLeashedToAvi + "," + (string)g_bFollowMode, NULL_KEY);
     DoLeash(kTarget, iAuth, [], g_bFollowMode); // sending empty list [] for lPoints
 
     // Notify Target how to unleash, only if:
@@ -415,6 +423,8 @@ DoLeash(key kTarget, integer iAuth, list lPoints, integer bFollowMode)
         llMoveToTarget(g_vPos, 0.7);
     }
     g_iUnixTime = llGetUnixTime();
+    debug("DoLeash: " + GetScriptID() + TOK_DEST + "=" + (string)kTarget + "," + (string)iAuth + "," + (string)g_bLeashedToAvi + "," + (string)g_bFollowMode);
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + TOK_DEST + "=" + (string)kTarget + "," + (string)iAuth + "," + (string)g_bLeashedToAvi + "," + (string)g_bFollowMode, NULL_KEY);
 }
 
 // sets up a sensor callback which will leash / follow / post on chatted target.
@@ -523,7 +533,6 @@ Unleash(key kCmdGiver)
         }
         Notify(g_kWearer, sWearMess, FALSE);
     }
-    
     DoUnleash();
 }
 
@@ -533,7 +542,7 @@ DoUnleash()
     llMessageLinked(LINK_THIS, COMMAND_PARTICLE, "unleash", g_kLeashedTo);
     g_kLeashedTo = NULL_KEY;
     g_iLastRank = COMMAND_EVERYONE;
-    llMessageLinked(LINK_SET, LM_SETTING_DELETE, TOK_DEST, "");
+    llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + TOK_DEST, "");
 }
 
 integer KeyIsAv(key id)
@@ -656,7 +665,7 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
             if (g_kWearer == kMessageID)
             {
                 g_iRot = FALSE;
-                llMessageLinked(LINK_SET, LM_SETTING_SAVE, TOK_ROT + "=0", "");
+                llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + TOK_ROT + "=0", "");
             }
             else
             {
@@ -668,7 +677,7 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
             if (g_kWearer == kMessageID)
             {
                 g_iRot = TRUE;
-                llMessageLinked(LINK_SET, LM_SETTING_DELETE, TOK_ROT, "");
+                llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + TOK_ROT, "");
             }
             else
             {
@@ -722,7 +731,7 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
                     SetLength(fNewLength);
                     //tell wearer  
                     Notify(kMessageID, "Leash length set to " + (string)fNewLength, TRUE);        
-                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, TOK_LENGTH + "=" + (string)fNewLength, "");
+                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + TOK_LENGTH + "=" + (string)fNewLength, "");
                 }
             }
             else Notify(kMessageID, "The current leash length is " + (string)g_fLength + "m.", TRUE);
@@ -840,27 +849,27 @@ default
             integer iInd = llSubStringIndex(sMessage, "=");
             string sTOK = llGetSubString(sMessage, 0, iInd -1);
             string sVAL = llGetSubString(sMessage, iInd + 1, -1);
-            if (sTOK == TOK_DEST)
+            if (PeelToken(sTOK, 0) == GetScriptID())
             {
-                //we got the last leasher's id and rank from the local settings
-                list lParam = llParseString2List(llGetSubString(sMessage, iInd + 1, -1), [","], []);
-                key kTarget = (key)llList2String(lParam, 0);
-                g_bLeashedToAvi = (integer)llList2String(lParam, 2);
-        g_bFollowMode = (integer)llList2String(lParam, 3);
-                list lPoints;
-                if (g_bLeashedToAvi)
+                sTOK = PeelToken(sTOK, 1);
+                if (sTOK == TOK_DEST)
                 {
-                    lPoints = ["collar", "handle"];
+                    //we got the last leasher's id and rank from the local settings
+                    list lParam = llParseString2List(llGetSubString(sMessage, iInd + 1, -1), [","], []);
+                    key kTarget = (key)llList2String(lParam, 0);
+                    g_bLeashedToAvi = (integer)llList2String(lParam, 2);
+                    g_bFollowMode = (integer)llList2String(lParam, 3);
+                    list lPoints;
+                    if (g_bLeashedToAvi)
+                    {
+                        lPoints = ["collar", "handle"];
+                    }
+                    // if PostedTo object has vanished, clear out the leash settings
+                    if (!llGetObjectPrimCount(kTarget) && !g_bLeashedToAvi) DoUnleash();
+                    else DoLeash(kTarget, (integer)llList2String(lParam, 1), lPoints, g_bFollowMode);
                 }
-                DoLeash(kTarget, (integer)llList2String(lParam, 1), lPoints, g_bFollowMode);                
-            }
-            else if (sTOK == TOK_LENGTH)
-            {
-                SetLength((float)sVAL);
-            }
-            else if (sTOK == TOK_ROT)
-            {
-                g_iRot = (integer)sVAL;
+                else if (sTOK == TOK_LENGTH) SetLength((float)sVAL);
+                else if (sTOK == TOK_ROT) g_iRot = (integer)sVAL;
             }
         }
         else if (iNum == DIALOG_RESPONSE)

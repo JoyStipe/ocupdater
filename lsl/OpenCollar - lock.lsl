@@ -1,4 +1,4 @@
-﻿//OpenCollar - lock
+//OpenCollar - lock
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 
 list g_lOwners;
@@ -55,7 +55,6 @@ integer RLV_CLEAR = 6002;//RLV plugins should clear their restriction lists upon
 integer g_bDetached = FALSE;
 
 key g_kWearer;
-
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
     if (kID == g_kWearer)
@@ -172,7 +171,7 @@ SetLockElementAlpha() //EB
 Lock()
 {
     g_iLocked = TRUE;
-    llMessageLinked(LINK_SET, LM_SETTING_SAVE, "locked=1", NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, "Global_locked=1", NULL_KEY);
     llMessageLinked(LINK_SET, RLV_CMD, "detach=n", NULL_KEY);
     llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + UNLOCK, NULL_KEY);
     llPlaySound("abdb1eaa-6160-b056-96d8-94f548a14dda", 1.0);
@@ -183,7 +182,7 @@ Lock()
 Unlock()
 {
     g_iLocked = FALSE;
-    llMessageLinked(LINK_SET, LM_SETTING_DELETE, "locked", NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_DELETE, "Global_locked", NULL_KEY);
     llMessageLinked(LINK_SET, RLV_CMD, "detach=y", NULL_KEY);
     llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + LOCK, NULL_KEY);
     llPlaySound("ee94315e-f69b-c753-629c-97bd865b7094", 1.0);
@@ -268,7 +267,7 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if (sToken == "locked")
+            if (sToken == "Global_locked")
             {
                 g_iLocked = (integer)sValue;
                 if (g_iLocked)
@@ -286,7 +285,7 @@ default
                 SetLockElementAlpha(); //EB
 
             }
-            else if (sToken == "owner")
+            else if (sToken == "auth_owner")
             {
                 g_lOwners = llParseString2List(sValue, [","], []);
             }
@@ -296,7 +295,7 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if (sToken == "owner")
+            if (sToken == "auth_owner")
             {
                 g_lOwners = llParseString2List(sValue, [","], []);
             }
@@ -369,5 +368,4 @@ default
             llResetScript();
         }
     }
-
 }

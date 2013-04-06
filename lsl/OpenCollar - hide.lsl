@@ -13,14 +13,13 @@ key g_kWearer;
 
 key g_kDialogID;
 key g_kTouchID;
- 
-string g_sDBToken = "elementalpha";
+
 list g_lAlphaSettings;
 string g_sIgnore = "nohide";
 list g_lButtons;
 
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "AppLock";
+string g_sAppLockToken = "Appearance_Lock";
 
 
 //MESSAGE MAP
@@ -78,7 +77,17 @@ Notify(key keyID, string sMsg, integer nAlsoNotifyWearer)
         }
     }
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
@@ -99,15 +108,6 @@ key TouchRequest(key kRCPT,  integer iTouchStart, integer iTouchEnd, integer iAu
 
 SetAllElementsAlpha(float fAlpha)
 {
-    //loop through element list, setting all alphas
-    //integer n;
-    //integer stop = llGetListLength(g_lElements);
-    //for (n = 0; n < stop; n++)
-    //{
-    //    string element = llList2String(g_lElements, n);
-    //    SetElementAlpha(element, fAlpha);
-    //}
-
     llSetLinkAlpha(LINK_SET, fAlpha, ALL_SIDES);
     //set alphasettings of all elements to fAlpha (either 1.0 or 0.0 here)
     g_lAlphaSettings = [];
@@ -151,17 +151,19 @@ SetElementAlpha(string element_to_set, float fAlpha)
 
 SaveAlphaSettings()
 {
-    if (llGetListLength(g_lAlphaSettings)>0)
+    integer i = 0;
+    integer n;
+    string token;
+    string value;
+    for (; i < llGetListLength(g_lElements); i ++)
     {
-        //dump list to string and do httpdb save
-        llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + llDumpList2String(g_lAlphaSettings, ","), NULL_KEY);
+        token = llList2String(g_lElements, i);
+        n = llListFindList(g_lAlphaSettings, [token]);
+        token = GetScriptID() + token;
+        value = llList2String(g_lAlphaSettings, n + 1);
+        if (~n) llMessageLinked(LINK_SET, LM_SETTING_SAVE, token + "=" + value, NULL_KEY);
+        else llMessageLinked(LINK_SET, LM_SETTING_DELETE, token, NULL_KEY);
     }
-    else
-    {
-        //dump list to string and do httpdb save
-        llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
-    }
-
 }
 
 ElementMenu(key kAv, integer iAuth)
@@ -262,15 +264,7 @@ default
     state_entry()
     {
         g_kWearer = llGetOwner();
-        //get dbprefix from object desc, so that it doesn't need to be hard coded, and scripts between differently-primmed collars can be identical
-        string sPrefix = llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
-        if (sPrefix != "")
-        {
-            g_sDBToken = sPrefix + g_sDBToken;
-        }
-
         BuildElementList();
-
         //register menu button
         llSleep(1.0);
         llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, NULL_KEY);
@@ -385,18 +379,13 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if (sToken == g_sDBToken)
+            if (PeelToken(sToken, 0) == GetScriptID())
             {
-                //we got the list of alphas for each element
-                g_lAlphaSettings = llParseString2List(sValue, [","], []);
-                integer n;
-                integer iStop = llGetListLength(g_lAlphaSettings);
-                for (n = 0; n < iStop; n = n + 2)
-                {
-                    string sElement = llList2String(g_lAlphaSettings, n);
-                    float fAlpha = (float)llList2String(g_lAlphaSettings, n + 1);
-                    SetElementAlpha(sElement, fAlpha);
-                }
+                sToken = PeelToken(sToken, 1);
+                integer i = llListFindList(g_lAlphaSettings, [sToken]);
+                if (~i) g_lAlphaSettings = llListReplaceList(g_lAlphaSettings, [sValue], i + 1, i + 1);
+                else g_lAlphaSettings += [sToken, sValue];
+                SetElementAlpha(sToken, (float)sValue);
             }
             else if (sToken == g_sAppLockToken)
             {

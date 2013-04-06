@@ -33,7 +33,7 @@ string UNTICKED = "( )";
 
 string APPLOCK = "Lock Appearance";
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "AppLock";
+string g_sAppLockToken = "Appearance_Lock";
 
 //MESSAGE MAP
 integer COMMAND_NOAUTH = 0;
@@ -101,7 +101,17 @@ Debug(string sStr)
 {
     //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 integer MinMaxUnscaled(vector vSize, float fScale)
 {
     if (fScale < 1.0)
@@ -352,11 +362,6 @@ DoMenu(key kAv, integer iAuth)
     {
         g_lMenuIDs = llListReplaceList(g_lMenuIDs, lAddMe, iMenuIndex, iMenuIndex + g_iMenuStride - 1);    
     }    
-}
-
-string GetDBPrefix()
-{//get db prefix from list in object desc
-    return llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
 }
 
 default

@@ -79,8 +79,6 @@ string g_sListType;
 integer CMD_ADDSRC = 11;
 integer CMD_REMSRC = 12;
 
-string g_sDBToken="relay";
-
 //collar owners, secowners and blacklist caching
 //string g_sOwnerssToken = "owner";
 //string g_sSecOwnerssToken = "secowners";
@@ -104,7 +102,17 @@ integer g_iPlayMode = 0;
 key g_kDebugRcpt = NULL_KEY; // recipient key for relay chat debugging (useful since you cannot eavesdrop llRegionSayTo)
 
 
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 // Sanitizes a key coming from the outside, so that only valid
 // keys are returned, and invalid ones are mapped to NULL_KEY
 key SanitizeKey(string uuid)
@@ -158,7 +166,7 @@ notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
 
 SaveSettings()
 {
-    string sNewSettings=g_sDBToken+"=mode:"
+    string sNewSettings= GetScriptID() + "settings=mode:"
         +(string)(512 * g_iMinPlayMode + 256 * g_iMinLandMode + 128 * g_iMinSafeMode + 32 * g_iMinBaseMode
         + 16 * g_iPlayMode + 8 * g_iLandMode + 4 * g_iSafeMode + g_iBaseMode);
 //    if ( g_lObjWhiteList != [] ) sNewSettings+=",objwhitelist:"+llDumpList2String(g_lObjWhiteList,"/");
@@ -577,7 +585,7 @@ CleanQueue()
     Dequeue();
 }
 
-// returns TRUE if it was a user command, FALSE if it is a LMÂ from another subsystem
+// returns TRUE if it was a user command, FALSE if it is a LM from another subsystem
 integer UserCommand(integer iNum, string sStr, key kID)
 {
     if (iNum<COMMAND_OWNER || iNum>COMMAND_WEARER) return FALSE;
@@ -751,24 +759,10 @@ default
             //first see if this is the token we care about
             list lParams = llParseString2List(sStr, ["="], []);
             string iToken = llList2String(lParams, 0);
-            if (iToken == g_sDBToken)
-            {
-                //throw away first element
-                //everything else is real settings (should be even number)
-                UpdateSettings(llList2String(lParams, 1));
-            }
-            else if (iToken == "owner")
-            {
-                g_lCollarOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
-            }
-            else if (iToken == "secowners")
-            {
-                g_lCollarSecOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
-            }
-            else if (iToken == "blacklist")
-            {
-                g_lCollarBlackList = llParseString2List(llList2String(lParams, 1), [","], []);
-            }
+            if (iToken == GetScriptID() + "settings") UpdateSettings(llList2String(lParams, 1));
+            else if (iToken == "auth_owner") g_lCollarOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
+            else if (iToken == "auth_secowner") g_lCollarSecOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
+            else if (iToken == "auth_blacklist") g_lCollarBlackList = llParseString2List(llList2String(lParams, 1), [","], []);
         }
         else if (iNum == LM_SETTING_SAVE)
         {   //this is tricky since our db sValue contains equals signs
@@ -776,18 +770,9 @@ default
             //first see if this is the sToken we care about
             list lParams = llParseString2List(sStr, ["="], []);
             string iToken = llList2String(lParams, 0);
-            if (iToken == "owner")
-            {
-                g_lCollarOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
-            }
-            else if (iToken == "secowners")
-            {
-                g_lCollarSecOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
-            }
-            else if (iToken == "blacklist")
-            {
-                g_lCollarBlackList = llParseString2List(llList2String(lParams, 1), [","], []);
-            }
+            if (iToken == "auth_owner") g_lCollarOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
+            else if (iToken == "auth_secowner") g_lCollarSecOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
+            else if (iToken == "auth_blacklist") g_lCollarBlackList = llParseString2List(llList2String(lParams, 1), [","], []);
         }
         // rlvoff -> we have to turn the menu off too
         else if (iNum == RLV_OFF)

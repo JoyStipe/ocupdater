@@ -12,7 +12,6 @@ list g_lTextures;
 list g_lTextureDefaults;
 string g_sParentMenu = "Appearance";
 string g_sSubMenu = "Textures";
-string g_sDBToken = "textures";
 
 integer iLength;
 list lButtons;
@@ -25,7 +24,7 @@ key g_ktextureID;
 key g_kTouchID;
 
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "AppLock";
+string g_sAppLockToken = "Appearance_Lock";
 
 //MESSAGE MAP
 //integer COMMAND_NOAUTH = 0;
@@ -72,7 +71,17 @@ Debug(string sStr)
 {
     //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 string GetDefaultTexture(string ele)
 {
     integer i = llListFindList(g_lTextureDefaults, [ele]);
@@ -235,7 +244,7 @@ SetElementTexture(string sElement, string sTex)
     if (~iIndex) g_lTextures = llListReplaceList(g_lTextures, [sTex], iIndex + 1, iIndex + 1);
     else g_lTextures += [s_CurrentElement, sTex];
     //save to settings
-    llMessageLinked(LINK_SET, LM_SETTING_SAVE, "Color" + sElement + "=" + sTex, NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + sElement + "=" + sTex, NULL_KEY);
 }
 string DumpSettings(string sep)
 {
@@ -254,12 +263,6 @@ default
     state_entry()
     {
         g_kWearer = llGetOwner();
-        //get dbprefix from object desc, so that it doesn't need to be hard coded, and scripts between differently-primmed collars can be identical
-        string sPrefix = llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
-        if (sPrefix != "")
-        {
-            g_sDBToken = sPrefix + g_sDBToken;
-        }
 
         //loop through non-root prims, build element list
         integer n;
@@ -360,19 +363,13 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if (sToken == g_sAppLockToken)
+            if (sToken == g_sAppLockToken) g_iAppLock = (integer)sValue;
+            else if (PeelToken(sToken, 0) == GetScriptID())
             {
-                g_iAppLock = (integer)sValue;
-            }
-            else
-            {
-                if (llToLower(llGetSubString(sToken, 0, 6)) == "texture")
-                {
-                    sToken = llGetSubString(sToken, 7, -1);
-                    integer i = llListFindList(g_lTextureDefaults, [sToken]);
-                    if (~i) g_lTextureDefaults = llListReplaceList(g_lTextureDefaults, [sValue], i + 1, i + 1);
-                    else g_lTextureDefaults += [sToken, sValue];
-                }
+                sToken = PeelToken(sToken, 1); // element
+                integer i = llListFindList(g_lTextureDefaults, [sToken]);
+                if (~i) g_lTextureDefaults = llListReplaceList(g_lTextureDefaults, [sValue], i + 1, i + 1);
+                else g_lTextureDefaults += [sToken, sValue];
             }
         }
         else if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu)

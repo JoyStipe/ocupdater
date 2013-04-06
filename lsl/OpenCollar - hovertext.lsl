@@ -192,13 +192,6 @@ default {
             }
         } else if (iNum == MENUNAME_REQUEST) {
             llMessageLinked(LINK_ROOT, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sFeatureName, NULL_KEY);
-        } else if (iNum == LM_SETTING_RESPONSE) {
-            lParams = llParseString2List(sStr, ["="], []);
-            string sToken = llList2String(lParams, 0);
-            Debug("sToken: " + sToken);
-            if (sToken == g_sDBToken) {
-                llMessageLinked(LINK_ROOT, LM_SETTING_DELETE, g_sDBToken , NULL_KEY);
-            }
         }
     }
 

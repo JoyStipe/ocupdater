@@ -45,6 +45,11 @@ Debug(string sStr)
 {
     //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
 
 string FirstName(string sName)
 {

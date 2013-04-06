@@ -66,7 +66,17 @@ integer CHATSPAM = TRUE; // default behavior
 string SPAMSWITCH = "verbose"; // lowercase chat-command token
 
 key g_kWearer;
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 string Key2Name(key kId)
 {
     string sOut = llGetDisplayName(kId);
@@ -348,8 +358,8 @@ integer UserCommand(integer iNum, string sStr, key kID)
         }
         else if (~i) MRSBUN = llDeleteSubList(MRSBUN, i, i);
         else return TRUE; // not in list to start with
-        if (!llGetListLength(MRSBUN)) llMessageLinked(LINK_THIS, LM_SETTING_DELETE, SPAMSWITCH, NULL_KEY);
-        else llMessageLinked(LINK_THIS, LM_SETTING_SAVE, SPAMSWITCH + "=" + llList2CSV(MRSBUN), NULL_KEY);
+        if (!llGetListLength(MRSBUN)) llMessageLinked(LINK_THIS, LM_SETTING_DELETE, GetScriptID() + SPAMSWITCH, NULL_KEY);
+        else llMessageLinked(LINK_THIS, LM_SETTING_SAVE, GetScriptID() + SPAMSWITCH + "=" + llList2CSV(MRSBUN), NULL_KEY);
         return TRUE;
     }
     return FALSE;
@@ -469,7 +479,7 @@ default
             list lParams = llParseString2List(llToLower(sStr), ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if (sToken == SPAMSWITCH) MRSBUN = llParseString2List(sValue, [","], []);
+            if (sToken == GetScriptID() + SPAMSWITCH) MRSBUN = llParseString2List(sValue, [","], []);
         }
     }
     

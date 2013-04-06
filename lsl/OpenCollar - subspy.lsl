@@ -51,7 +51,7 @@ integer DIALOG = -9000;
 integer DIALOG_RESPONSE = -9001;
 integer DIALOG_TIMEOUT = -9002;
 
-string g_sDBToken = "spy";
+string g_sDBToken = "List";
 
 string UPMENU = "^";
 string g_sParentMenu = "AddOns";
@@ -70,7 +70,17 @@ Debug(string sStr)
 {
     //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 DoReports()
 {
     Debug("doing reports");
@@ -496,6 +506,7 @@ default
         g_sSubName = llKey2Name(g_kWearer);
         g_sLoc=llGetRegionName();
         g_lOwners = [g_kWearer, g_sSubName];  // initially self-owned until we hear a db message otherwise
+        g_sDBToken = GetScriptID() + g_sDBToken;
     }
 
     listen(integer channel, string sName, key kID, string sMessage)
@@ -529,7 +540,7 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if(sToken == "owner" && llStringLength(sValue) > 0)
+            if(sToken == "auth_owner" && llStringLength(sValue) > 0)
             {
                 g_lOwners = llParseString2List(sValue, [","], []);
                 Debug("owners: " + sValue);
@@ -540,7 +551,7 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if(sToken == "owner" && llStringLength(sValue) > 0)
+            if(sToken == "auth_owner" && llStringLength(sValue) > 0)
             {
                 g_lOwners = llParseString2List(sValue, [","], []);
                 Debug("owners: " + sValue);

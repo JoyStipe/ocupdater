@@ -153,9 +153,6 @@ integer g_iListener;
 key g_kMenuUser; // id of the avatar who will get the next menu after asynchronous response from RLV
 integer g_iMenuAuth; // auth level of that user
 
-string g_sDBToken = "undress";
-string g_sDBTokenLockAll = "DressAllLocked";
-
 integer g_iRLVOn = FALSE;
 
 list g_lLockedItems; // list of locked clothes
@@ -169,7 +166,17 @@ Debug(string sMsg)
 {
     //llOwnerSay(llGetScriptName() + ": " + sMsg);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
     if (kID == g_kWearer)
@@ -370,7 +377,7 @@ ClearSettings()
     g_lLockedAttach=[];
     SaveLockAllFlag(0);
     //remove tpsettings from DB
-    llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "List", NULL_KEY);
     //main RLV script will take care of sending @clear to viewer
 }
 
@@ -384,12 +391,12 @@ SaveLockAllFlag(integer iSetting)
     if(iSetting > 0)
     {
         //save the flag to the database
-        llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBTokenLockAll+"=Y", NULL_KEY);
+        llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "LockAll=Y", NULL_KEY);
     }
     else
     {
         //delete the flag from the database
-        llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBTokenLockAll, NULL_KEY);
+        llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "LockAll", NULL_KEY);
     }
 }
 
@@ -439,7 +446,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
                 {   //we already have a setting for this option.  update it.
                     g_lSettings = llListReplaceList(g_lSettings, [sOption, sParam], iIndex, iIndex + 1);
                 }
-                llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
+                llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "List=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
             }
             else if (sParam == "y")
             {
@@ -448,9 +455,9 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
                     g_lSettings = llDeleteSubList(g_lSettings, iIndex, iIndex + 1);
                 }
                 if (llGetListLength(g_lSettings)>0)
-                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
+                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "List=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
                 else
-                    llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
+                    llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "List", NULL_KEY);
             }
         }
     }
@@ -656,19 +663,21 @@ default
             //split string on both comma and equals sign
             //first see if this is the token we care about
             list lParams = llParseString2List(sStr, ["="], []);
-            if ( llList2String(lParams, 0)== g_sDBTokenLockAll)
+            string token = llList2String(lParams, 0);
+            string value = llList2String(lParams, 1);
+            if (PeelToken(token, 0) == GetScriptID())
             {
-                //re-apply the lockall after a re-log
-                g_iAllLocked = 1;
-                DoLockAll(kID);
-            }
-
-            if (llList2String(lParams, 0) == g_sDBToken)
-            {
-                //throw away first element
-                //everything else is real settings (should be even number)
-                g_lSettings = llParseString2List(llList2String(lParams, 1), [","], []);
-                UpdateSettings();
+                token = PeelToken(token, 1);
+                if (token == "LockAll")
+                {
+                    g_iAllLocked = 1;
+                    DoLockAll(kID);
+                }
+                else if (token == "List")
+                {
+                    g_lSettings = llParseString2List(llList2String(lParams, 1), [","], []);
+                    UpdateSettings();
+                }
             }
         }
         else if (iNum == RLV_REFRESH)
@@ -744,7 +753,7 @@ default
                     if (sMessage == UPMENU) MainMenu(kAv, iAuth);
                     else if (sMessage == "Attachments") QueryAttachments(kAv, iAuth);
                     else if (sMessage == ALL) 
-                    // SA:Â we can count ourselves lucky that all people who can see the menu have sufficient privileges for remoutfit commands!
+                    // SA:Â we can count ourselves lucky that all people who can see the menu have sufficient privileges for remoutfit commands!
                     //    Note for people looking for the auth check: it would have been here, look no further!
                     { //send the RLV command to remove it.
                         llMessageLinked(LINK_SET, RLV_CMD,  "remoutfit=force", NULL_KEY);
@@ -844,5 +853,4 @@ default
     {
         llResetScript();
     }
-
 }

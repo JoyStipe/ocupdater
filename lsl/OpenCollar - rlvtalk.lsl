@@ -2,7 +2,6 @@
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 string g_sParentMenu = "RLV";
 string g_sSubMenu = "Talk";
-string g_sDBToken = "rlvtalk";
 
 list g_lSettings;//2-strided list in form of [option, param]
 
@@ -94,7 +93,17 @@ Debug(string sMsg)
     //llOwnerSay(llGetScriptName() + ": " + sMsg);
     //llInstantMessage(llGetOwner(), llGetScriptName() + ": " + sMsg);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
     if (kID == g_kWearer) {
         llOwnerSay(sMsg);
@@ -281,9 +290,9 @@ SaveSettings()
 {
     //save to DB
     if (llGetListLength(g_lSettings)>0)
-        llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
+        llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "List=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
     else
-        llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
+        llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "List", NULL_KEY);
 }
 
 ClearSettings()
@@ -291,7 +300,7 @@ ClearSettings()
     //clear settings list
     g_lSettings = [];
     //remove tpsettings from DB
-    llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "List", NULL_KEY);
     //main RLV script will take care of sending @clear to viewer
 }
 
@@ -385,7 +394,7 @@ default
             //split string on both comma and equals sign
             //first see if this is the token we care about
             list lParams = llParseString2List(sStr, ["="], []);
-            if (llList2String(lParams, 0) == g_sDBToken)
+            if (llList2String(lParams, 0) == GetScriptID() + "List")
             {
                 //throw away first element
                 //everything else is real settings (should be even number)

@@ -45,7 +45,6 @@ string g_sPartnerName;
 float g_fTimeOut = 20.0;//duration of anim
 //i dont think this flag is needed at all
 integer g_iTargetID; // remember the walk target to delete
-string g_sDBToken = "coupletime";
 string g_sSubAnim;
 string g_sDomAnim;
 
@@ -93,7 +92,17 @@ Debug(string sStr)
 {
     //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
@@ -287,7 +296,7 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if(sToken == g_sDBToken)
+            if(sToken == GetScriptID() + "timeout")
             {
                 g_fTimeOut = (float)sValue;
             }
@@ -497,7 +506,7 @@ state ready
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if(sToken == g_sDBToken)
+            if(sToken == GetScriptID() + "timeout")
             {
                 g_fTimeOut = (float)sValue;
             }
@@ -550,14 +559,14 @@ state ready
                 else if ((integer)sMessage > 0 && ((string)((integer)sMessage) == sMessage))
                 {
                     g_fTimeOut = (float)((integer)sMessage);
-                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + (string)g_fTimeOut, NULL_KEY);
+                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "timeout=" + (string)g_fTimeOut, NULL_KEY);
                     Notify (kAv, "Couple Anmiations play now for " + (string)llRound(g_fTimeOut) + " seconds.",TRUE);
                     CoupleAnimMenu(kAv, iAuth);
                 }
                 else if (sMessage == "endless")
                 {
                     g_fTimeOut = 0.0;
-                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + (string)g_fTimeOut, NULL_KEY);
+                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "timeout=" + (string)g_fTimeOut, NULL_KEY);
                     Notify (kAv, "Couple Anmiations play now for ever. Use the menu or type *stopcouples to stop them again.",TRUE);
                 }
                 else

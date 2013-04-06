@@ -2,7 +2,6 @@
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 string g_sParentMenu = "RLV";
 string g_sSubMenu = "Misc";
-string g_sDBToken = "rlvmisc";
 
 list g_lSettings;//2-strided list in form of [option, param]
 
@@ -98,6 +97,17 @@ string UPMENU = "^";
 
 key g_kWearer;
 
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
     if (kID == g_kWearer)
@@ -199,22 +209,20 @@ UpdateSettings()
     }
 }
 
-SaveSettings()
+SaveSetting(string token, string value)
 {
-    //save to DB
-    if (llGetListLength(g_lSettings)>0)
-        llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + llDumpList2String(g_lSettings, ","), NULL_KEY);
-    else
-        llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
+    llMessageLinked(LINK_THIS, LM_SETTING_SAVE, GetScriptID() + token + "=" + value, NULL_KEY);
 }
 
 ClearSettings()
 {
-    //clear settings list
+    integer i = 0;
+    for (; i < llGetListLength(g_lSettings); i += 2)
+    {
+        string token = GetScriptID() + llList2String(g_lSettings, i);
+        llMessageLinked(LINK_SET, LM_SETTING_DELETE, token, NULL_KEY);
+    }
     g_lSettings = [];
-    //remove tpsettings from DB
-    llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
-    //main RLV script will take care of sending @clear to viewer
 }
 
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
@@ -248,7 +256,6 @@ integer UserCommand(integer iNum, string sStr, key kID)
     list lItems = llParseString2List(sStr, [","], []);
     integer n;
     integer iStop = llGetListLength(lItems);
-    integer iChange = FALSE;//set this to true if we see a setting that concerns us
     for (n = 0; n < iStop; n++)
     {
         //split off the parameters (anything after a : or =)
@@ -279,19 +286,13 @@ integer UserCommand(integer iNum, string sStr, key kID)
                 //we already have a setting for this option.  update it.
                 g_lSettings = llListReplaceList(g_lSettings, [sOption, sParam], iIndex, iIndex + 1);
             }
-
-            iChange = TRUE;
+            SaveSetting(sOption, sParam);
+            UpdateSettings();
         }
         else if (sBehavior == "clear" && iNum == COMMAND_OWNER)
         {
             ClearSettings();
         }
-    }
-
-    if (iChange)
-    {
-        UpdateSettings();
-        SaveSettings();
     }
     return TRUE;
 }
@@ -324,14 +325,16 @@ default
             //split string on both comma and equals sign
             //first see if this is the token we care about
             list lParams = llParseString2List(sStr, ["="], []);
-            if (llList2String(lParams, 0) == g_sDBToken)
+            string token = llList2String(lParams, 0);
+            string value = llList2String(lParams, 1);
+            if (PeelToken(token, 0) == GetScriptID())
             {
-                //throw away first element
-                //everything else is real settings (should be even number)
-                g_lSettings = llParseString2List(llList2String(lParams, 1), [","], []);
-                UpdateSettings();
+                token = PeelToken(token, 1);
+                integer i = llListFindList(g_lSettings, [token]);
+                if (~i) g_lSettings = llListReplaceList(g_lSettings, [value], i+1, i+1);
+                else g_lSettings += [token, value];
             }
-            //llOwnerSay("TP DB settings: " + llDumpList2String(settings, ","));
+            else if (sStr == "settings=set") UpdateSettings();
         }
         else if (iNum == RLV_REFRESH)
         {

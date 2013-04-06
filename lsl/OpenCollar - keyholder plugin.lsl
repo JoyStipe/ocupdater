@@ -10,9 +10,6 @@ string g_sToyName = "collar";
 // Are we in cuff mode?
 integer g_iOpenCuffMode = FALSE;
 
-// Who do we send messages to?
-integer LINK_WHAT = LINK_SET;
-
 // -- Menu Configureation ----------------------------------------
 string g_szSubmenu = "Key Holder"; // Name of the submenu
 string g_szParentmenu = "AddOns"; // name of the menu, where the menu plugs in, should be usually Addons. Please do not use the mainmenu anymore ( AddOns or Main is recomended depending on the toy. )
@@ -65,12 +62,8 @@ integer g_iKeyHolderChannel = -0x3FFF0502;
 // key;take;UUID;auth
 // key;return;reason
 
-// ------ TOKEN DEFINITIONS ------
-string TOK_STORE = "keyholder"; // Stuff that gets stored in the settings store
-
 // State stuff
 key g_keyWearer; // key of the current wearer to reset only on owner changes
-string g_szPrefix; // sub prefix for databse actions
 
 // menu handlers
 key g_keyMenuID; // For saving the key of the last dialog we sent
@@ -162,7 +155,17 @@ integer nGetOwnerChannel(integer nOffset)
 }
 
 //===============================================================================
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 BuildLockElementList() // EB :kc was here
 {
     integer n;
@@ -200,12 +203,6 @@ SetElementAlpha(float fAlpha, list lList) // EB :kc was here
 
 string strReplace(string str, string search, string replace) {
     return llDumpList2String(llParseStringKeepNulls((str = "") + str, [search], []), replace);
-}
-
-// Returns true if it matches with or with out the setting prefix
-integer CompareSettingPrefix(string str, string value)
-{
-    return ((str == value) || (str == (g_szPrefix + value)));
 }
 
 //===============================================================================
@@ -290,7 +287,7 @@ DoMenu(key kID, integer iPublicMenu, integer iAuth)
         prompt = "The key is available for the taking!";        
         mybuttons = [ "Take Key" ] + mybuttons;
     }
-    else
+    else if (iAuth == COMMAND_OWNER)
     {
         prompt = "The key is held by " + kh_name + "\n\nOwners can force a key return.";
         mybuttons = [ "Force Return" ] + mybuttons;
@@ -299,14 +296,10 @@ DoMenu(key kID, integer iPublicMenu, integer iAuth)
     if (!iPublicMenu)
     {
         prompt += "\n\nLockout - Lock wearer out IMMEDIATLY. Unset on key return.";
-        if (!kh_lockout)
-            mybuttons += "Lock Out";
-
-        mybuttons += [ "Configure" ];
-    }
-    
-    if (!iPublicMenu)
+        if (!kh_lockout) mybuttons += "Lock Out";
+        if (iAuth == COMMAND_OWNER) mybuttons += ["Configure"];
         utility_buttons += [UPMENU];
+    }
     g_keyMenuID = Dialog(kID, prompt, mybuttons, utility_buttons, 0, iAuth);
 }
 
@@ -413,12 +406,12 @@ TakeKey(key avatar, integer auth, integer remote)
     setMainMenu();
     
     if (kh_disable_openaccess && oc_openaccess)
-        llMessageLinked(LINK_WHAT, COMMAND_OWNER, "unsetopenaccess", avatar);
+        llMessageLinked(LINK_THIS, COMMAND_OWNER, "unsetopenaccess", avatar);
     
     if (kh_lock_collar && !oc_locked)
-        llMessageLinked(LINK_WHAT, COMMAND_OWNER, "lock", avatar);
+        llMessageLinked(LINK_THIS, COMMAND_OWNER, "lock", avatar);
     
-    if (avatar != g_keyWearer) llMessageLinked(LINK_WHAT, WEARERLOCKOUT, "on", "");
+    if (avatar != g_keyWearer) llMessageLinked(LINK_THIS, WEARERLOCKOUT, "on", "");
     
     if (kh_auto_return_timer && kh_auto_return_time)
     {
@@ -426,10 +419,10 @@ TakeKey(key avatar, integer auth, integer remote)
         integer hours = kh_auto_return_time / 60 / 60;
         
         // Set the timer. Real timer for now. Make it an option later.
-        llMessageLinked(LINK_WHAT, COMMAND_OWNER, 
+        llMessageLinked(LINK_THIS, COMMAND_OWNER, 
             "timer real=" + (string)hours + ":" + (string)minutes,
             NULL_KEY);
-        llMessageLinked(LINK_WHAT, COMMAND_OWNER, "timer start", NULL_KEY);
+        llMessageLinked(LINK_THIS, COMMAND_OWNER, "timer start", NULL_KEY);
     }
     
     Notify(avatar, "You take " + llKey2Name(g_keyWearer) + "'s key!", FALSE);
@@ -458,21 +451,21 @@ ReturnKey(string reason, integer remote)
     setMainMenu();
 
     if (kh_disable_openaccess && kh_saved_openaccess && !oc_openaccess)
-        llMessageLinked(LINK_WHAT, COMMAND_OWNER, "setopenaccess", avatar); 
+        llMessageLinked(LINK_THIS, COMMAND_OWNER, "setopenaccess", avatar); 
     
     if (kh_lock_collar && !kh_saved_locked && oc_locked)
-        llMessageLinked(LINK_WHAT, COMMAND_OWNER, "unlock", avatar);
+        llMessageLinked(LINK_THIS, COMMAND_OWNER, "unlock", avatar);
     
     // Need to check if someone else is doing this too... but really that should be handled by 
     // the auth module somehow.
-    llMessageLinked(LINK_WHAT, WEARERLOCKOUT, "off", "");
+    llMessageLinked(LINK_THIS, WEARERLOCKOUT, "off", "");
     
     // Lockout canceled on key return
     kh_lockout = FALSE;
     
     if (kh_auto_return_timer && kh_auto_return_time)
     {
-        llMessageLinked(LINK_WHAT, COMMAND_OWNER, "timer stop", NULL_KEY);
+        llMessageLinked(LINK_THIS, COMMAND_OWNER, "timer stop", NULL_KEY);
     }
             
     Notify(avatar, llKey2Name(g_keyWearer) + "'s key is returned. " + reason, FALSE);
@@ -493,15 +486,15 @@ ReturnKey(string reason, integer remote)
 //===============================================================================
 setMainMenu()
 {
-    llMessageLinked(LINK_WHAT, MENUNAME_REMOVE, "Main" + "|" + RETURNKEY, NULL_KEY);
-    llMessageLinked(LINK_WHAT, MENUNAME_REMOVE, "Main" + "|" + TAKEKEY, NULL_KEY);
+    llMessageLinked(LINK_THIS, MENUNAME_REMOVE, "Main" + "|" + RETURNKEY, NULL_KEY);
+    llMessageLinked(LINK_THIS, MENUNAME_REMOVE, "Main" + "|" + TAKEKEY, NULL_KEY);
     
     if (kh_on && kh_main_menu)
     {
         if (kh_key != NULL_KEY)
-            llMessageLinked(LINK_WHAT, MENUNAME_RESPONSE, "Main" + "|" + RETURNKEY, NULL_KEY);
+            llMessageLinked(LINK_THIS, MENUNAME_RESPONSE, "Main" + "|" + RETURNKEY, NULL_KEY);
         else
-            llMessageLinked(LINK_WHAT, MENUNAME_RESPONSE, "Main" + "|" + TAKEKEY, NULL_KEY);
+            llMessageLinked(LINK_THIS, MENUNAME_RESPONSE, "Main" + "|" + TAKEKEY, NULL_KEY);
     }
 }
 
@@ -510,8 +503,8 @@ setMainMenu()
 //===============================================================================
 setTimerMenu()
 {
-    llMessageLinked(LINK_WHAT, MENUNAME_RESPONSE, g_szTimerMenu + "|" + CheckBox("Return Key", kh_return_on_timer), NULL_KEY);
-    llMessageLinked(LINK_WHAT, MENUNAME_REMOVE, g_szTimerMenu + "|" + CheckBox("Return Key", !kh_return_on_timer), NULL_KEY);
+    llMessageLinked(LINK_THIS, MENUNAME_RESPONSE, g_szTimerMenu + "|" + CheckBox("Return Key", kh_return_on_timer), NULL_KEY);
+    llMessageLinked(LINK_THIS, MENUNAME_REMOVE, g_szTimerMenu + "|" + CheckBox("Return Key", !kh_return_on_timer), NULL_KEY);
 }
 
 //===============================================================================
@@ -555,7 +548,7 @@ updateVisible()
 saveSettings()
 {
     llMessageLinked(LINK_THIS, LM_SETTING_SAVE, 
-        g_szPrefix + TOK_STORE + "=" +
+        GetScriptID() + "list" + "=" +
         llDumpList2String([
                 kh_on,
                 kh_range,
@@ -613,42 +606,102 @@ loadLocalSettings(string sSettings)
 //=
 //===============================================================================
 
-string GetSettingPrefix()
-{//get setting prefix from list in object desc
-    return llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
-}
-
-
-//===============================================================================
-
 
 // returns TRUE if eligible (AUTHED link message number)
 integer UserCommand(integer num, string str, key id) // here iNum: auth value, sStr: user command, kID: avatar id
 {
     if (num > COMMAND_EVERYONE || num < COMMAND_OWNER) return FALSE; // sanity check
     if (str == "menu " + g_szSubmenu) DoMenu(id, FALSE, num);
-    else if (str == "menu " + g_szKeyConfigMenu) DoMenuConfigure(id, num);
+    else if ((id == g_keyWearer || num == COMMAND_OWNER) && str == "resetscripts") llResetScript();
+    else if (num == COMMAND_OWNER) // owner only stuff here
+    {
+        if (str == "menu " + g_szKeyConfigMenu) DoMenuConfigure(id, num);
+        else if (llGetSubString(str, 0, 6) == "khtime " )
+        {
+            list times = llParseString2List(llDeleteSubString(str, 0,6), ["d", ":" ], []);
+            kh_auto_return_time = 
+                ( (integer)llList2String(times, 0) * 24 * 60 * 60 ) + // days
+                ( (integer)llList2String(times, 1) * 60 * 60 ) + // Hours
+                ( (integer)llList2String(times, 2) * 60 ) + // Minutes
+                ( (integer)llList2String(times, 3)  ) ; // Seconds
+            kh_auto_return_timer = TRUE;
+        }
+        else if (str == "khsetautooff") kh_auto_return_timer = FALSE; 
+        else if (str == "khforcereturn")
+        {
+            if (kh_key == NULL_KEY) Notify(id, "The key is already in the lock.", FALSE);
+            else
+            {
+                ReturnKey(llKey2Name(id) + " forced the return.", FALSE);
+                Notify(id, "You force-return the key to the lock.", FALSE);
+            }
+        }
+        else if (str == "khtimerreturn")
+        {
+            if (kh_key != NULL_KEY) ReturnKey("Key returned by timer.", FALSE);
+        }
+        else if (str == "khsetlock" || str == "khunsetlock")
+        {
+            kh_lock_collar = ( str == "khsetlock" );
+        }
+        else if (str == "khsetnoopen" || str == "khunsetnoopen")
+        {
+            kh_disable_openaccess = ( str == "khsetnoopen" );
+        }
+        else if (str == "khsetpub.key" || str == "khunsetpub.key")
+        {
+            kh_public_key = ( str == "khsetpub.key" );
+        }
+        else if (str == "khlockout")
+        {
+            if (kh_lockout) return TRUE;
+            kh_lockout = TRUE;
+            Notify(g_keyWearer, "You are now locked out until your key is taken and returned.", TRUE);
+            llMessageLinked(LINK_THIS, WEARERLOCKOUT, "on", "");
+        }
+        else if (str == "khsetmainmenu" || str == "khunsetmainmenu")
+        {
+            kh_main_menu = ( str == "khsetmainmenu" );
+            setMainMenu();
+        }
+        else if (str == "khsetglobal" || str == "khunsetglobal")
+        {
+            g_iGlobalKey = ( str == "khsetglobal" );
+        }
+        else if (str == "khseton" || str == "khunseton")
+        {
+            kh_on = ( str == "khseton" );                
+            if (kh_key != NULL_KEY)
+                ReturnKey("Key Holder plugin turned off by " + llKey2Name(id), FALSE);        
+            updateVisible();
+        }
+        else if (str == "khunsettimerreturnkey" || str == "khsettimerreturnkey")
+        {
+            kh_return_on_timer = ( str == "khsettimerreturnkey");
+            setTimerMenu();
+        }
+    }
     // "Return Key" buttons from timer plugin.
     else if (str == "menu (*)Return Key")
     {
         UserCommand(num, "khunsettimerreturnkey", id);
-        llMessageLinked(LINK_WHAT, num, "menu "+ g_szTimerMenu, id);                
+        llMessageLinked(LINK_THIS, num, "menu "+ g_szTimerMenu, id);                
     }
     else if (str == "menu ( )Return Key")
     {
         UserCommand(num, "khsettimerreturnkey", id);
-        llMessageLinked(LINK_WHAT, num, "menu "+ g_szTimerMenu, id);                
+        llMessageLinked(LINK_THIS, num, "menu "+ g_szTimerMenu, id);                
     }
     // Take/Return key from the main menu
     else if (str == "menu " + TAKEKEY)
     {
         UserCommand(num, "khtakekey", id);
-        llMessageLinked(LINK_WHAT, num, "menu Main", id);
+        llMessageLinked(LINK_THIS, num, "menu Main", id);
     }
     else if (str == "menu " + RETURNKEY)
     {
         UserCommand(num, "khreturnkey", id);
-        llMessageLinked(LINK_WHAT, num, "menu Main", id);
+        llMessageLinked(LINK_THIS, num, "menu Main", id);
     }      
     else if (str == "khreturnkey")
     {
@@ -657,89 +710,12 @@ integer UserCommand(integer num, string str, key id) // here iNum: auth value, s
     }
     else if (str == "khtakekey")
     {
-//        if (id == g_keyWearer) Notify(id, "Taking your own key does not make any sense.", FALSE);
-//SA: I think it does make sense to take your own key, if only to temporarily protect the key or just test stuff.
-//        else
         if (kh_key != NULL_KEY) Notify(id, "The key is not in the lock.", FALSE);
         else TakeKey(id, num, FALSE);
     }
-    else if ((id == g_keyWearer || num == COMMAND_OWNER) && str == "resetscripts") llResetScript();
     // after here, only primary owner commands
-    if (num != COMMAND_OWNER)
-    {
-        // Notify(id, "That command can only be accessed by an Owner.", FALSE);
-        return TRUE;
-    }
-    else if (llGetSubString(str, 0, 6) == "khtime " )
-    {
-        list times = llParseString2List(llDeleteSubString(str, 0,6), ["d", ":" ], []);
-        kh_auto_return_time = 
-            ( (integer)llList2String(times, 0) * 24 * 60 * 60 ) + // days
-            ( (integer)llList2String(times, 1) * 60 * 60 ) + // Hours
-            ( (integer)llList2String(times, 2) * 60 ) + // Minutes
-            ( (integer)llList2String(times, 3)  ) ; // Seconds
-        kh_auto_return_timer = TRUE;
-    }
-    else if (str == "khsetautooff")
-        kh_auto_return_timer = FALSE; 
-    else if (str == "khforcereturn")
-    {
-        if (kh_key == NULL_KEY)
-            Notify(id, "The key is already in the lock.", FALSE);
-        else
-        {
-            ReturnKey(llKey2Name(id) + " forced the return.", FALSE);
-            Notify(id, "You force-return the key to the lock.", FALSE);
-        }
-    }
-    else if (str == "khtimerreturn")
-    {
-        if (kh_key != NULL_KEY)
-        {
-            ReturnKey("Key returned by timer.", FALSE);
-        }
-    }
-    else if (str == "khsetlock" || str == "khunsetlock")
-    { 
-        kh_lock_collar = ( str == "khsetlock" );
-    }
-    else if (str == "khsetnoopen" || str == "khunsetnoopen")
-    {
-        kh_disable_openaccess = ( str == "khsetnoopen" );
-    }
-    else if (str == "khsetpub.key" || str == "khunsetpub.key")
-    {
-        kh_public_key = ( str == "khsetpub.key" );
-    }
-    else if (str == "khlockout")
-    {
-        if (kh_lockout)
-            return TRUE;
-        kh_lockout = TRUE;
-        Notify(g_keyWearer, "You are now locked out until your key is taken and returned.", TRUE);
-        llMessageLinked(LINK_WHAT, WEARERLOCKOUT, "on", "");
-    }
-    else if (str == "khsetmainmenu" || str == "khunsetmainmenu")
-    {
-        kh_main_menu = ( str == "khsetmainmenu" );
-        setMainMenu();
-    }
-    else if (str == "khsetglobal" || str == "khunsetglobal")
-    {
-        g_iGlobalKey = ( str == "khsetglobal" );
-    }
-    else if (str == "khseton" || str == "khunseton")
-    {
-        kh_on = ( str == "khseton" );                
-        if (kh_key != NULL_KEY)
-            ReturnKey("Key Holder plugin turned off by " + llKey2Name(id), FALSE);        
-        updateVisible();
-    }
-    else if (str == "khunsettimerreturnkey" || str == "khsettimerreturnkey")
-    {
-        kh_return_on_timer = ( str == "khsettimerreturnkey");
-        setTimerMenu();
-    }
+    else if (llGetSubString(str, 0 ,1) != "kh") return FALSE;
+    else return FALSE;
     saveSettings();
     return TRUE;
 }
@@ -751,10 +727,8 @@ default
         // sleep a second to allow all scripts to be initialized
         llSleep(1.0);
         // send request to main menu and ask other menus if they want to register with us
-//        llMessageLinked(LINK_WHAT, MENUNAME_REQUEST, g_szSubmenu, NULL_KEY);
-        llMessageLinked(LINK_WHAT, MENUNAME_RESPONSE, g_szParentmenu + "|" + g_szSubmenu, NULL_KEY);
-        // get setting prefix from object desc, so that it doesn't need to be hard coded, and scripts between differently-primmed collars can be identical
-        g_szPrefix = GetSettingPrefix();
+//        llMessageLinked(LINK_THIS, MENUNAME_REQUEST, g_szSubmenu, NULL_KEY);
+        llMessageLinked(LINK_THIS, MENUNAME_RESPONSE, g_szParentmenu + "|" + g_szSubmenu, NULL_KEY);
         g_keyWearer=llGetOwner();
         updateVisible();
         
@@ -780,7 +754,7 @@ default
         if ( kh_lockout || kh_key != NULL_KEY )
         {
             llSleep(5.); // wait for other scripts to reset
-            llMessageLinked(LINK_WHAT, WEARERLOCKOUT, "on", "");
+            llMessageLinked(LINK_THIS, WEARERLOCKOUT, "on", "");
         }
         updateVisible();
     }
@@ -792,7 +766,7 @@ default
             // our parent menu requested to receive buttons, so send ours
         {
             if (str == g_szParentmenu)
-                llMessageLinked(LINK_WHAT, MENUNAME_RESPONSE, g_szParentmenu + "|" + g_szSubmenu, NULL_KEY);
+                llMessageLinked(LINK_THIS, MENUNAME_RESPONSE, g_szParentmenu + "|" + g_szSubmenu, NULL_KEY);
 
             if (str == "Main") setMainMenu();
             else if (str == g_szTimerMenu) setTimerMenu();
@@ -816,7 +790,7 @@ default
             }
             else if (id == kh_key)
             {
-                llMessageLinked(LINK_WHAT, COMMAND_GROUP, str, id);
+                llMessageLinked(LINK_THIS, COMMAND_GROUP, str, id);
             }
             else if (kh_key == NULL_KEY && str == "menu" && !oc_openaccess && kh_public_key)
             {
@@ -842,7 +816,7 @@ default
                 if (message == UPMENU)
                 {
                     if (id == g_keyMenuID)
-                        llMessageLinked(LINK_WHAT, iAuth, "menu "+g_szParentmenu, av);
+                        llMessageLinked(LINK_THIS, iAuth, "menu "+g_szParentmenu, av);
                     else if (id == g_keyConfigMenuID)
                         DoMenu(av, FALSE, iAuth);
                     else if (id == g_keyConfigAutoReturnMenuID)
@@ -899,30 +873,26 @@ default
             list params = llParseString2List(str, ["="], []);
             string token = llList2String(params, 0);
             string value = llList2String(params, 1);
-            
-            if ( CompareSettingPrefix(token, "locked") )
+            if (PeelToken(token, 0) == GetScriptID())
+            {
+                token = PeelToken(token, 1);
+                if (token == "list") loadSettings(value);
+            }
+            else if (token == "auth_openaccess") oc_openaccess = (integer)value;
+            else if (token == "Global_locked")
             {
                 oc_locked = (integer)value;
                 updateVisible();
             }
-            else if ( CompareSettingPrefix(token, "openaccess") )
-            {
-                oc_openaccess = (integer)value;
-            }
-            else if ( CompareSettingPrefix(token, TOK_STORE) )
-            {
-                loadSettings(value);
-            }
         }
         else if (num == LM_SETTING_DELETE)
         {
-            // Saddly it's deleted to indicate FALSE rather than set to 0...
-            if ( CompareSettingPrefix(str, "locked") )
+            if (str == "Global_locked")
             {
                 oc_locked = FALSE;
                 updateVisible();
             }
-            else if ( CompareSettingPrefix(str, "openaccess") ) oc_openaccess = FALSE;
+            else if (str == "auth_openaccess") oc_openaccess = FALSE;
         }
         else if (num == COMMAND_SAFEWORD)
         {

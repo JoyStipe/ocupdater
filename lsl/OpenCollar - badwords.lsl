@@ -58,7 +58,17 @@ Debug(string sMsg)
 {
     //Notify(g_kWearer,llGetScriptName() + ": " + sMsg,TRUE);
 }
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
@@ -255,10 +265,10 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             if(!iOldLength && iNewLength)
             {
                 g_sIsEnabled = "badwordson=true";
-                llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sIsEnabled, NULL_KEY);
+                llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + g_sIsEnabled, NULL_KEY);
             }
             //save to database
-            llMessageLinked(LINK_SET, LM_SETTING_SAVE, "badwords=" + llDumpList2String(g_lBadWords, "~"), NULL_KEY);
+            llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "badwords=" + llDumpList2String(g_lBadWords, "~"), NULL_KEY);
             ListenControl();
             Notify(kID, WordPrompt(),TRUE);
         }
@@ -272,7 +282,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             {
                 g_sBadWordAnim = sAnim;
                 //Debug(g_sBadWordAnim);
-                llMessageLinked(LINK_SET, LM_SETTING_SAVE, "badwordsanim=" + g_sBadWordAnim, NULL_KEY);
+                llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "badwordsanim=" + g_sBadWordAnim, NULL_KEY);
                 Notify(kID, "Punishment anim for bad words is now '" + g_sBadWordAnim + "'.",FALSE);
             }
             else
@@ -290,7 +300,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             else
             {
                 g_sPenance = llStringTrim(sPenance, STRING_TRIM);
-                llMessageLinked(LINK_SET, LM_SETTING_SAVE, "penance=" + g_sPenance, NULL_KEY);
+                llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "penance=" + g_sPenance, NULL_KEY);
                 string sPrompt = WordPrompt();
                 Notify(kID, sPrompt,TRUE);
             }
@@ -311,7 +321,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
                 }
             }
             //save to sDatabase
-            llMessageLinked(LINK_SET, LM_SETTING_SAVE, "badwords=" + llDumpList2String(g_lBadWords, "~"), NULL_KEY);
+            llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "badwords=" + llDumpList2String(g_lBadWords, "~"), NULL_KEY);
             ListenControl();
             Notify(kID, WordPrompt(),TRUE);
         }
@@ -322,7 +332,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
                 if(llGetListLength(g_lBadWords))
                 {
                     g_sIsEnabled = "badwordson=true";
-                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sIsEnabled, NULL_KEY);
+                    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + g_sIsEnabled, NULL_KEY);
                     //llMessageLinked(LINK_SET, LM_SETTING_SAVE, "badwords=" + g_sIsEnabled, NULL_KEY);
                     ListenControl();
                     Notify(kID, "Badwords are now turned on for: " + llDumpList2String(g_lBadWords, "~"),FALSE);
@@ -334,7 +344,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             else if(sValue == "off")
             {
                 g_sIsEnabled = "badwordson=false";
-                llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sIsEnabled, NULL_KEY);
+                llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + g_sIsEnabled, NULL_KEY);
                 ListenControl();
                 Notify(kID, "Badwords are now turned off.",FALSE);
             }
@@ -342,8 +352,8 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             {
                 g_lBadWords = [];
                 g_sIsEnabled = "badwordson=false";
-                llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sIsEnabled, NULL_KEY);
-                llMessageLinked(LINK_SET, LM_SETTING_SAVE, "badwords=", NULL_KEY);
+                llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + g_sIsEnabled, NULL_KEY);
+                llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "badwords=", NULL_KEY);
                 ListenControl();
                 DialogBadwords(kID, iNum);
                 Notify(kID, "You cleared the badword list and turned it off.",FALSE);
@@ -378,23 +388,27 @@ default
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            if(sToken == "badwordson")
+            if (PeelToken(sToken, 0) == GetScriptID())
             {
-                g_sIsEnabled = "badwordson" + "=" + sValue;
-                ListenControl();
-            }
-            if (sToken == "badwordsanim")
-            {
-                g_sBadWordAnim = sValue;
-            }
-            else if (sToken == "badwords")
-            {
-                g_lBadWords = llParseString2List(llToLower(sValue), ["~"], []);
-                ListenControl();
-            }
-            else if (sToken == "penance")
-            {
-                g_sPenance = sValue;
+                sToken = PeelToken(sToken, 1);
+                if (sToken == "badwordson")
+                {
+                    g_sIsEnabled = "badwordson" + "=" + sValue;
+                    ListenControl();
+                }
+                else if (sToken == "badwordsanim")
+                {
+                    g_sBadWordAnim = sValue;
+                }
+                else if (sToken = "badwords")
+                {
+                    g_lBadWords = llParseString2List(llToLower(sValue), ["~"], []);
+                    ListenControl();
+                }
+                else if (sToken == "penance")
+                {
+                    g_sPenance = sValue;
+                }
             }
         }
         // no more self - resets
@@ -406,7 +420,7 @@ default
         else if(iNum == COMMAND_SAFEWORD)
         { // safeword disables badwords !
             g_sIsEnabled = "badwords=false";
-            llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sIsEnabled, NULL_KEY);
+            llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + g_sIsEnabled, NULL_KEY);
             ListenControl();
         }
         else if (iNum == MENUNAME_REQUEST)

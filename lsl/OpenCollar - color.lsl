@@ -84,12 +84,8 @@ Pastel Yellow|<1.00000, 1.00000, 0.44706>"
 
 list g_lColorSettings;
 
-
-
 string g_sParentMenu = "Appearance";
 string g_sSubMenu = "Colors";
-
-string g_sDBToken = "colorsettings";
 
 list g_lColors;
 integer g_iStridelength = 2;
@@ -101,7 +97,7 @@ list g_lMenuIDs;
 key g_kTouchID;
 
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "AppLock";
+string g_sAppLockToken = "Appearance_Lock";
 
 //MESSAGE MAP
 //integer COMMAND_NOAUTH = 0;
@@ -140,6 +136,17 @@ string UPMENU = "^";
 
 key g_kWearer;
 
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
@@ -207,28 +214,6 @@ string ElementType(integer iLinkNumber)
     }
 }
 
-
-LoadColorSettings()
-{
-    //llOwnerSay(llDumpList2String(g_lColorSettings, ","));
-    //loop through links, setting each's color according to entry in g_lColorSettings list
-    integer n;
-    integer iLinkCount = llGetNumberOfPrims();
-    for (n = 2; n <= iLinkCount; n++)
-    {
-        string element = ElementType(n);
-        integer iIndex = llListFindList(g_lColorSettings, [element]);
-        vector vColor = (vector)llList2String(g_lColorSettings, iIndex + 1);
-        //llOwnerSay(llList2String(g_lColorSettings, iIndex + 1));
-        if (iIndex != -1)
-        {
-            //set link to new color
-            llSetLinkColor(n, vColor, ALL_SIDES);
-            //llSay(0, "setting link " + (string)n + " to color " + (string)vColor);
-        }
-    }
-}
-
 BuildElementList()
 {
     integer n;
@@ -272,8 +257,8 @@ SetElementColor(string sElement, vector vColor)
     {
         g_lColorSettings = llListReplaceList(g_lColorSettings, [sStrColor], iIndex + 1, iIndex + 1);
     }
-    //save to httpdb
-    llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + llDumpList2String(g_lColorSettings, "~"), NULL_KEY);
+    //save to settings
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + sElement + "=" + sStrColor, NULL_KEY);
     //g_sCurrentElement = "";
 }
 
@@ -307,13 +292,6 @@ default
     state_entry()
     {
         g_kWearer = llGetOwner();
-        //get dbprefix from object desc, so that it doesn't need to be hard coded, and scripts between differently-primmed collars can be identical
-        string sPrefix = llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
-        if (sPrefix != "")
-        {
-            g_sDBToken = sPrefix + g_sDBToken;
-        }
-
         //loop through non-root prims, build element list
         BuildElementList();
         // no more needed
@@ -327,14 +305,22 @@ default
         if (sStr == "reset" && (iNum == COMMAND_OWNER || iNum == COMMAND_WEARER))
         {
             //clear saved settings
-            llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
+            llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "all", NULL_KEY);
             llResetScript();
         }
         else if (iNum >= COMMAND_OWNER && iNum <= COMMAND_WEARER)
         {
             if (sStr == "settings")
             {
-                Notify(kID, "Color Settings: " + llDumpList2String(g_lColorSettings, ","),FALSE);
+                string out;
+                integer i = 0;
+                for (; i < llGetListLength(g_lColorSettings); i += 2)
+                {
+                    if (i != 0) out += ",";
+                    out += llList2String(g_lColorSettings, i) + "=";
+                    out += llList2String(g_lColorSettings, i + 1);
+                }
+                Notify(kID, "Color Settings: " + out,FALSE);
             }
             else if (StartsWith(sStr, "setcolor"))
             {
@@ -392,14 +378,12 @@ default
         
         else if (iNum == LM_SETTING_RESPONSE)
         {
-            list lParams = llParseString2List(sStr, ["="], []);
-            string sToken = llList2String(lParams, 0);
-            string sValue = llList2String(lParams, 1);
-            if (sToken == g_sDBToken)
+            integer i = llSubStringIndex(sStr, "=");
+            string sToken = llGetSubString(sStr, 0, i - 1);
+            string sValue = llGetSubString(sStr, i + 1, -1);
+            if (PeelToken(sToken, 0) == GetScriptID())
             {
-                g_lColorSettings = llParseString2List(sValue, ["~"], []);
-                //llInstantMessage(llGetOwner(), "Loaded color settings.");
-                LoadColorSettings();
+                SetElementColor(PeelToken(sToken, 1), (vector)sValue);
             }
             else if (sToken == g_sAppLockToken)
             {
@@ -465,6 +449,7 @@ default
                     g_lColors = llListSort(g_lColors, 2, TRUE);
                     ColorMenu(kAv,iAuth);
                 }
+                //JS: Just curious, why do we have to convert an integer to an (um) integer?? Or did I miss something about indexes in C++??
                 else if (~(integer)llListFindList(g_lColors, [sMessage]))
                 {
                     //found a color, now set it

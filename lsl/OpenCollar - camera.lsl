@@ -4,7 +4,6 @@
 
 key g_kWearer;
 integer g_iLastNum;
-string g_sDBToken = "cam";
 string g_sMyMenu = "Camera";
 string g_sParentMenu = "AddOns";
 key g_kMenuID;
@@ -61,6 +60,17 @@ integer DIALOG_TIMEOUT = -9002;
 string UPMENU = "^";
 //string MORE = ">";
 
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 CamMode(string sMode)
 {
     llClearCameraParams();
@@ -75,7 +85,7 @@ ClearCam()
     llClearCameraParams();
     g_iLastNum = 0;    
     g_iSync2Me = FALSE;
-    llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, "");    
+    llMessageLinked(LINK_SET, LM_SETTING_DELETE, GetScriptID() + "all", "");    
 }
 
 CamFocus(vector g_vCamPos, rotation g_rCamRot)
@@ -274,9 +284,11 @@ Debug(string sStr)
     //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
 
-SaveSetting(string sSetting)
+SaveSetting(string sToken)
 {
-    llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sDBToken + "=" + sSetting + "," + (string)g_iLastNum, "");
+    sToken = GetScriptID() + sToken;
+    string sValue = (string)g_iLastNum;
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, sToken + "=" + sValue, "");
 }
 
 ChatCamParams(integer chan)
@@ -437,22 +449,16 @@ default
             list lParams = llParseString2List(sStr, ["=", ","], []);
             string sToken = llList2String(lParams, 0);
             string sValue = llList2String(lParams, 1);
-            integer iNum = (integer)llList2String(lParams, 2);
-            if (sToken == g_sDBToken)
+            if (PeelToken(sToken, 0) == GetScriptID())
             {
+                sToken = PeelToken(sToken, 1);
                 if (llGetPermissions() & PERMISSION_CONTROL_CAMERA)
                 {
-                    if (sValue == "freeze")
-                    {
-                        LockCam();
-                    }
-                    else if (~llListFindList(g_lModes, [sValue]))
-                    {
-                        CamMode(sValue);
-                    }
-                    g_iLastNum = iNum;                    
+                    if (sToken == "freeze") LockCam();
+                    else if (~llListFindList(g_lModes, [sToken])) CamMode(sToken);
+                    g_iLastNum = (integer)sValue;
                 }
-            }            
+            }           
         }
         else if (iNum == DIALOG_RESPONSE)
         {

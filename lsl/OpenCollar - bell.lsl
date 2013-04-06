@@ -32,30 +32,24 @@ float g_fSpeedStep=0.5; // stepping for Speed adjusting
 float g_fSpeedMin=0.5; // stepping for Speed adjusting
 float g_fSpeedMax=5.0; // stepping for Speed adjusting
 
+string GLOBAL = "Global_";
 string g_sSubPrefix;
-
-string g_sSpeedToken="bellspeed"; // token for saving bell volume
 
 integer g_iBellOn=0; // are we ringing. Off is 0, On = Auth of person which enabled
 string g_sBellOn="*Bell On*"; // menu text of bell on
 string g_sBellOff="*Bell Off*"; // menu text of bell on
-string g_sBellOnOffToken="bellon"; // sToken for saving bell volume
 integer g_iBellAvailable=FALSE;
 
 integer g_iBellShow=TRUE; // is the bell visible
 string g_sBellShow="Bell Show"; //menu text of bell visible
 string g_sBellHide="Bell Hide"; //menu text of bell hidden
-string g_sBellShowToken="bellshow"; // token for saving bell volume
 
 list g_listBellSounds=["7b04c2ee-90d9-99b8-fd70-8e212a72f90d","b442e334-cb8a-c30e-bcd0-5923f2cb175a","1acaf624-1d91-a5d5-5eca-17a44945f8b0","5ef4a0e7-345f-d9d1-ae7f-70b316e73742","da186b64-db0a-bba6-8852-75805cb10008","d4110266-f923-596f-5885-aaf4d73ec8c0","5c6dd6bc-1675-c57e-0847-5144e5611ef9","1dc1e689-3fd8-13c5-b57f-3fedd06b827a"]; // list with bell sounds
 key g_kCurrentBellSound ; // curent bell sound key
 integer g_iCurrentBellSound; // curent bell sound sumber
 integer g_iBellSoundCount; // number of avail bell sounds
 string g_sBellSoundIdentifier="bell_"; // use this to find additional sounds in the inventory
-string g_sBellSoundNumberToken="bellsoundnum"; // token to save number of the used sound
-string g_sBellSoundKeyToken="bellsoundkey"; // token to save key of the used sound
 
-string g_sBellSaveToken="bell"; // token to save settings of the bell on the http
 
 string g_sBellPrimName="Bell"; // Description for Bell elements
 
@@ -120,25 +114,22 @@ key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integ
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
     return kID;
 } 
-
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+}
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 string AutoPrefix()
 {
     list sName = llParseString2List(llKey2Name(llGetOwner()), [" "], []);
     return llToLower(llGetSubString(llList2String(sName, 0), 0, 0)) + llToLower(llGetSubString(llList2String(sName, 1), 0, 0));
 }
-
-//===============================================================================
-//= parameters   :    key keyID   Target for the message
-//=                string sMsg    Message to SEND
-//=                integer nAlsoNotifyWearer Boolean to notify the g_kWearer as well
-//=
-//= return        :    none
-//=
-//= description  :    send a message to a receiver and if needed to the wearer as well
-//=
-//===============================================================================
-
-
 
 Notify(key kID, string sMsg, integer nAlsoNotifyWearer)
 {
@@ -156,17 +147,6 @@ Notify(key kID, string sMsg, integer nAlsoNotifyWearer)
         }
     }
 }
-
-
-//===============================================================================
-//= parameters   :    string    sMsg    message string received
-//=
-//= return        :    none
-//=
-//= description  :    output debug messages
-//=
-//===============================================================================
-
 
 Debug(string sMsg)
 {
@@ -188,21 +168,6 @@ Debug(string sMsg)
 integer nStartsWith(string sHaystack, string sNeedle) // http://wiki.secondlife.com/wiki/llSubStringIndex
 {
     return (llDeleteSubString(sHaystack, llStringLength(sNeedle), -1) == sNeedle);
-}
-
-//===============================================================================
-//= parameters   :   none
-//=
-//= return        :    string prefix for the object in the form of "oc_"
-//=
-//= description  :    generate the prefix from the object desctiption
-//=
-//===============================================================================
-
-
-string sGetDBPrefix()
-{//get db prefix from list in object desc
-    return llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
 }
 
 //===============================================================================
@@ -386,63 +351,10 @@ ShowHelp(key kID)
 }
 
 //===============================================================================
-//= parameters   :   sSettings setting received from http
-//=
-//= return        :    none
-//=
-//= description  :    Restore settings from 1 string at the httpdb
-//=
-//= order of settings in the string:
-//= g_iBellOn (integer),  g_iBellShow (integer), g_iCurrentBellSound (integer), g_sVolToken (integer/10), g_sSpeedToken (integer/10)
-//=
-//===============================================================================
-
-
-RestoreBellSettings(string sSettings)
-{
-    list lstSettings=llParseString2List(sSettings,[","],[]);
-
-    // should the bell ring
-    g_iBellOn=(integer)llList2String(lstSettings,0);
-    if (g_iBellOn & !g_iHasControl)
-    {
-        llRequestPermissions(g_kWearer,PERMISSION_TAKE_CONTROLS);
-    }
-    else if (!g_iBellOn & g_iHasControl)
-    {
-        llReleaseControls();
-        g_iHasControl=FALSE;
-
-    }
-
-
-    // is the bell visible?
-    g_iBellShow=(integer)llList2String(lstSettings,1);
-    if (g_iBellShow)
-    {// make sure it can be seen
-        SetBellElementAlpha(1.0);
-    }
-    else
-    {// or is hidden
-        SetBellElementAlpha(0.0);
-    }
-
-    // the number of the sound for ringing
-    g_iCurrentBellSound=(integer)llList2String(lstSettings,2);
-    g_kCurrentBellSound=llList2Key(g_listBellSounds,g_iCurrentBellSound);
-
-    // bell volume
-    g_fVolume=((float)llList2String(lstSettings,3))/10;
-
-    // ring speed
-    g_fSpeed=((float)llList2String(lstSettings,4))/10;
-}
-
-//===============================================================================
 //= parameters   :   none
 //=
 //= return        :    none
-//=
+//= 
 //= description  :    Save settings in 1 string at the httpdb
 //=
 //= order of settings in the string:
@@ -452,24 +364,11 @@ RestoreBellSettings(string sSettings)
 
 SaveBellSettings()
 {
-    string sSettings=g_sBellSaveToken+"=";
-
-    // should the bell ring
-    sSettings += (string)g_iBellOn+",";
-
-    // is the bell visible?
-    sSettings+=(string)g_iBellShow+",";
-
-    // the number of the sound for ringing
-    sSettings+=(string)g_iCurrentBellSound+",";
-
-    // bell volume
-    sSettings+=(string)llFloor(g_fVolume*10)+",";
-
-    // ring speed
-    sSettings+=(string)llFloor(g_fSpeed*10);
-
-    llMessageLinked(LINK_SET, LM_SETTING_SAVE,sSettings,NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "on=" + (string)g_iBellOn, NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "show=" + (string)g_iBellShow, NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "sound=" + (string)g_iCurrentBellSound, NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "vol=" + (string)llFloor(g_fVolume*10), NULL_KEY);
+    llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "speed=" + (string)llFloor(g_fSpeed*10), NULL_KEY);
 }
 
 // returns TRUE if eligible (AUTHED link message number)
@@ -605,17 +504,6 @@ default
         // key of the owner
         g_kWearer=llGetOwner();
         g_sSubPrefix=AutoPrefix();
-        // update tokens for httpdb_saving
-        string s=sGetDBPrefix();
-        g_sBellSaveToken = s + g_sBellSaveToken;
-
-        // out of date token, just in by now to delete them, can be removed in 3.4
-        g_sVolToken = s + g_sVolToken;
-        g_sSpeedToken = s + g_sSpeedToken;
-        g_sBellOnOffToken = s + g_sBellOnOffToken;
-        g_sBellShowToken = s + g_sBellShowToken;
-        g_sBellSoundNumberToken=s + g_sBellSoundNumberToken;
-        g_sBellSoundKeyToken=s + g_sBellSoundKeyToken;
 
         // reset script time used for ringing the bell in intervalls
         llResetTime();
@@ -654,66 +542,47 @@ default
         else if (iNum == LM_SETTING_RESPONSE)
         {
             // some responses from the DB are coming in, check if it is about bell values
-            list lParams = llParseString2List(sStr, ["="], []);
-            string sToken = llList2String(lParams, 0);
-            string sValue = llList2String(lParams, 1);
-
-            if (sToken == g_sBellSaveToken )
-                // line with bell settings received
+            integer i = llSubStringIndex(sStr, "=");
+            string sToken = llGetSubString(sStr, 0, i - 1);
+            string sValue = llGetSubString(sStr, i + 1, -1);
+            if (PeelToken(sToken, 0) == GetScriptID())
             {
-                // so we restore them
-                RestoreBellSettings(sValue);
-            }
-            else if (sToken == "prefix")
-                // prefix of chat for examples
-            {
-                g_sSubPrefix=sValue;
-            }
-            // from here old tokens are only restored and deleted from http to save room. This section can be removed at a later stage (3.4 for instance)
-            else if (sToken == g_sVolToken )
-            {
-                // bell volume
-                g_fVolume=(float)sValue;
-                llMessageLinked(LINK_SET,LM_SETTING_DELETE,g_sVolToken,NULL_KEY);
-                SaveBellSettings();
-            }
-            else if (sToken == g_sSpeedToken)
-            {
-                // ring speed
-                g_fSpeed=(float)sValue;
-                llMessageLinked(LINK_SET,LM_SETTING_DELETE,g_sSpeedToken,NULL_KEY);
-                SaveBellSettings();
-            }
-            else if (sToken == g_sBellOnOffToken)
-            {
-                // should the bell ring
-                g_iBellOn=(integer)sValue;
-                llMessageLinked(LINK_SET,LM_SETTING_DELETE,g_sBellOnOffToken,NULL_KEY);
-                SaveBellSettings();
-            }
-            else if (sToken == g_sBellSoundNumberToken)
-            {
-                // the number of the sound for ringing
-                g_iCurrentBellSound=(integer)sValue;
-                g_kCurrentBellSound=llList2Key(g_listBellSounds,g_iCurrentBellSound);
-                llMessageLinked(LINK_SET,LM_SETTING_DELETE,g_sBellSoundNumberToken,NULL_KEY);
-                SaveBellSettings();
-            }
-            else if (sToken == g_sBellShowToken)
-            {
-                // is the bell visioble?
-                g_iBellShow=(integer)sValue;
-                if (g_iBellShow)
-                {// make sure it can be seen
-                    SetBellElementAlpha(1.0);
+                sToken = PeelToken(sToken, 1);
+                if (sToken == "on")
+                {
+                    g_iBellOn=(integer)sValue;
+                    if (g_iBellOn & !g_iHasControl)
+                    {
+                        llRequestPermissions(g_kWearer,PERMISSION_TAKE_CONTROLS);
+                    }
+                    else if (!g_iBellOn & g_iHasControl)
+                    {
+                        llReleaseControls();
+                        g_iHasControl=FALSE;
+                    }
                 }
-                else
-                {// or is hidden
-                    SetBellElementAlpha(0.0);
+                else if (sToken == "show")
+                {
+                    g_iBellShow=(integer)sValue;
+                    if (g_iBellShow) SetBellElementAlpha(1.0);
+                    else SetBellElementAlpha(0.0);
                 }
-                llMessageLinked(LINK_SET,LM_SETTING_DELETE,g_sBellShowToken,NULL_KEY);
-                SaveBellSettings();
+                else if (sToken == "sound")
+                {
+                    g_iCurrentBellSound=(integer)sValue;
+                    g_kCurrentBellSound=llList2Key(g_listBellSounds,g_iCurrentBellSound);
+                }
+                else if (sToken == "vol") g_fVolume=(float)sValue/10;
+                else if (sToken == "speed") g_fSpeed=(float)sValue/10;
             }
+            else if (sToken == "Golobal_prefix") g_sSubPrefix=sValue;
+        }
+        else if (iNum == LM_SETTING_SAVE)
+        {
+            integer i = llSubStringIndex(sStr, "=");
+            string sToken = llGetSubString(sStr, 0, i - 1);
+            string sValue = llGetSubString(sStr, i + 1, -1);
+            if (sToken == "Golobal_prefix") g_sSubPrefix=sValue;
         }
         else if (UserCommand(iNum, sStr, kID)) return;
         else if (iNum==DIALOG_RESPONSE)
