@@ -234,7 +234,7 @@ FetchAvi(integer auth, string type, string name, key user)
     string out = llList2CSV(["getavi_", GetScriptID(), "add", type, name]) + "|";
     integer i = 0;
     list src = g_lOwners;
-    if (type == "secowner") src = g_lSecOwners;
+    if (type == "secowner") src += g_lSecOwners;
     else if (type == "blacklist") src = g_lBlackList;
     list exclude; // build list of existing-listed keys to exclude from name search
     for (; i < llGetListLength(src); i += 2)

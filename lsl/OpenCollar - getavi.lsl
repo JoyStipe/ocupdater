@@ -53,19 +53,25 @@ string GetScriptID()
 list FindAvis(string in, list ex)
 {
     list out = llGetAgentList(AGENT_LIST_REGION, []);
+    string name;
     integer i = llGetListLength(out) - 1;
     integer x = 0;
     while(~i)
     {
-        if (llSubStringIndex(llKey2Name(llList2Key(out, i)), in) == -1)
+        name = llKey2Name(llList2Key(out, i));
+        if (llSubStringIndex(llToLower(name), llToLower(in)) == -1)
             out = llDeleteSubList(out, i, i);
-        else for (; x < llGetListLength(ex); x++)
-        {
-            if (llListFindList(ex, [llList2String(out, i)]))
-                out = llDeleteSubList(out, i, i);
-        }
         i--;
     }
+    Debug("first pass results: " + llList2CSV(out));
+    i = llGetListLength(out) - 1;
+    while (~i)
+    {
+        if (~llListFindList(ex, [llList2String(out, i)]))
+            out = llDeleteSubList(out, i, i);
+        i--;
+    }
+    Debug("second pass results: " + llList2CSV(out));
     return out;
 }
 
@@ -97,11 +103,17 @@ integer UserCommand(integer auth, string comm, key user)
     if (llGetListLength(params) > 4)
     {
         name = llDumpList2String(llDeleteSubList(params, 0, 3), " ");
+        Debug("Searching for: " + name);
     }
     list exclude = llCSV2List(llList2String(lists, 1));
     AVIS = FindAvis(name, exclude);
     integer i = llGetListLength(AVIS);
-    if (!i) Notify(user, "Could not find any avatars starting with \"" + name + "\" in the region", FALSE);
+    if (!i)
+    {
+        string mess = "Could not find any avatars ";
+        if (name != "") mess += "starting with \"" + name + "\" ";
+        Notify(user, mess + "in the region", FALSE);
+    }
     else if (i == 1 && llList2Key(AVIS, 0) == user) 
     {
         string sPrompt = "You are the only one in this region. Add yourself?";
