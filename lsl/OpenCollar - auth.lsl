@@ -105,7 +105,7 @@ integer g_iWearerlocksOut;
 
 integer g_iRemenu = FALSE;
 
-key g_kDialoger;//the person using the dialog.  needed in the sensor event when scanning for new owners to add
+key g_kDialoger;//the person using the dialog.
 integer g_iDialogerAuth; //auth of the person using the dialog
 
 Debug(string sStr)
@@ -221,12 +221,28 @@ key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integ
     return kID;
 } 
 
-Name2Key(string sName)
+/*Name2Key(string sName)
 {
     // Variant of N2K, uses SL's internal search engine instead of external databases
     string url = "http://www.w3.org/services/html2txt?url=";
     string escape = "http://vwrsearch.secondlife.com/client_search.php?session=00000000-0000-0000-0000-000000000000&q=";
     g_kHTTPID = llHTTPRequest(url + llEscapeURL(escape) + llEscapeURL(sName), [], ""); 
+}
+*/
+FetchAvi(integer auth, string type, string name, key user)
+{
+    string out = llList2CSV(["getavi_", GetScriptID(), "add", type, name]) + "|";
+    integer i = 0;
+    list src = g_lOwners;
+    if (type == "secowner") src = g_lSecOwners;
+    else if (type == "blacklist") src = g_lBlackList;
+    list exclude; // build list of existing-listed keys to exclude from name search
+    for (; i < llGetListLength(src); i += 2)
+    {
+        exclude += [llList2String(src, i)];
+    }
+    out += llList2CSV(exclude);
+    llMessageLinked(LINK_THIS, auth, out, user);
 }
 
 AuthMenu(key kAv, integer iAuth)
@@ -499,11 +515,58 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
         AuthMenu(kID, iNum);
     }
     else if (iNum == COMMAND_OWNER)
-    { //respond to messages to set or unset owner, group, or secowners.  only owner may do these things
-        list lParams = llParseString2List(sStr, [" "], []);
+    {
+        list lParams = llCSV2List(sStr);
+        if (llList2String(lParams, 0) == GetScriptID())
+        {
+            if (llList2String(lParams, 2) == "add")
+            {
+                g_sRequestType = llList2String(lParams, 3);
+                key new = llList2Key(lParams, 4);
+                if (g_sRequestType != "blacklist" && new != g_kWearer)
+                {
+                    Notify(kID, "Requesting confirmation from " + llKey2Name(new), FALSE);
+                    g_kDialoger = kID;
+                    string prompt = llKey2Name(kID) + " would like to add you as\na";
+                    if (g_sRequestType == "owner") prompt += "n";
+                    else if (g_sRequestType == "secowner") prompt += " secondary";
+                    prompt += " owner on ";
+                    if (kID == g_kWearer) prompt += "their ";
+                    else prompt += llKey2Name(g_kWearer) + "'s ";
+                    prompt += "collar.\nDo you accept?";
+                    g_kAuthMenuID = Dialog(new, prompt, ["Yes", "No"], [], 0, iNum);
+                    return TRUE;
+                }
+                NewPerson(new, llKey2Name(new), g_sRequestType);
+                return TRUE;
+            }
+        }
+        //respond to messages to set or unset owner, group, or secowners.  only owner may do these things
+        lParams = llParseString2List(sStr, [" "], []);
         string sCommand = llList2String(lParams, 0);
+        if ((key)llList2String(lParams, 1))
+        {
+            key new = (key)llList2String(lParams, 1);
+            g_sRequestType = sCommand;
+            if (g_sRequestType != "blacklist" && new != g_kWearer)
+            {
+                Notify(kID, "Requesting confirmation from " + llKey2Name(new), FALSE);
+                g_kDialoger = kID;
+                string prompt = llKey2Name(kID) + " would like to add you as\na";
+                if (g_sRequestType == "owner") prompt += "n";
+                else if (g_sRequestType == "secowner") prompt += " secondary";
+                prompt += " owner on ";
+                if (kID == g_kWearer) prompt += "their ";
+                else prompt += llKey2Name(g_kWearer) + "'s ";
+                prompt += "collar.\nDo you accept?";
+                g_kAuthMenuID = Dialog(new, prompt, ["Yes", "No"], [], 0, iNum);
+                return TRUE;
+            }
+            NewPerson(new, llKey2Name(new), g_sRequestType);
+            return TRUE;
+        }
         if (sCommand == "owner")
-        { //set a new owner.  DO NOT use w-hat sName2key service -- it's gone
+        { //set a new owner.
             //if no owner at all specified:
             if (llList2String(lParams, 1) == "")
             {
@@ -515,16 +578,13 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             lParams = llDeleteSubList(lParams, 0, 0);
             //record owner name
             g_sTmpName = llDumpList2String(lParams, " ");
-            //sensor for the owner name to get the key or set the owner directly if it is the wearer
             if(llToLower(g_sTmpName) == llToLower(llKey2Name(g_kWearer)))
             {
                 NewPerson(g_kWearer, g_sTmpName, "owner");
             }
             else
             {
-                g_kDialoger = kID;
-                g_iDialogerAuth = iNum;
-                llSensor("","", AGENT, 20.0, PI);
+                FetchAvi(iNum, g_sRequestType, g_sTmpName, kID);
             }
         }
         else if (sCommand == "remowners")
@@ -560,28 +620,19 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             lParams = llDeleteSubList(lParams, 0, 0);
             //record owner name
             g_sTmpName = llDumpList2String(lParams, " ");
-            if (g_sTmpName=="")
-            {
-                g_sRequestType = g_sSecOwnerScan;
-                g_kDialoger = kID;
-                g_iDialogerAuth = iNum;
-                llSensor("", "", AGENT, 10.0, PI);
-            }
-            else if (llGetListLength(g_lSecOwners) == 20)
+            if (llGetListLength(g_lSecOwners) == 20)
             {
                 Notify(kID, "The maximum of 10 secowners is reached, please clean up or use SetGroup",FALSE);
             }
             else
-            {//sensor for the owner name to get the key or set the owner directly if it is the wearer
+            {
                 if(llToLower(g_sTmpName) == llToLower(llKey2Name(g_kWearer)))
                 {
                     NewPerson(g_kWearer, g_sTmpName, "secowner");
                 }
                 else
                 {
-                    g_kDialoger = kID;
-                    g_iDialogerAuth = iNum;
-                    llSensor("","", AGENT, 20.0, PI);
+                    FetchAvi(iNum, g_sRequestType, g_sTmpName, kID);
                 }
             }
         }
@@ -619,22 +670,13 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             lParams = llDeleteSubList(lParams, 0, 0);
             //record blacklisted name
             g_sTmpName = llDumpList2String(lParams, " ");
-            if (g_sTmpName=="")
-            {
-                g_sRequestType = g_sBlackListScan;
-                g_kDialoger = kID;
-                g_iDialogerAuth = iNum;
-                llSensor("", "", AGENT, 10.0, PI);
-            }
-            else if (llGetListLength(g_lBlackList) == 20)
+            if (llGetListLength(g_lBlackList) == 20)
             {
                 Notify(kID, "The maximum of 10 blacklisted is reached, please clean up.",FALSE);
             }
             else
-            {   //sensor for the blacklisted name to get the key
-                g_kDialoger = kID;
-                g_iDialogerAuth = iNum;
-                llSensor("","", AGENT, 20.0, PI);
+            {
+                FetchAvi(iNum, g_sRequestType, g_sTmpName, kID);
             }
         }
         else if (sCommand == "remblacklist")
@@ -960,14 +1002,21 @@ default
                         llMessageLinked(LINK_SET, iAuth, "menu " + g_sParentMenu, kAv);
                         return;
                     }
+                    else if (sMessage == "Yes")
+                    {
+                        NewPerson(kAv, llKey2Name(kAv), g_sRequestType);
+                        return;
+                    }
+                    else if (sMessage == "No")
+                    {
+                        Notify(g_kDialoger, llKey2Name(kAv) + " has declined your request.", FALSE);
+                        return;
+                    }
                     else if (sMessage == g_sSetOwner)
                     {
                         if (OwnerCheck(kAv))
                         {
-                            g_sRequestType = g_sOwnerScan;
-                            g_kDialoger = kAv;
-                            g_iDialogerAuth = iAuth;
-                            llSensor("", "", AGENT, 10.0, PI);
+                            FetchAvi(iAuth, "owner", "", kAv);
                             return;
                         }
                     }
@@ -975,10 +1024,7 @@ default
                     {
                         if (OwnerCheck(kAv))
                         {
-                            g_sRequestType = g_sSecOwnerScan;
-                            g_kDialoger = kAv;
-                            g_iDialogerAuth = iAuth;
-                            llSensor("", "", AGENT, 10.0, PI);
+                            FetchAvi(iAuth, "secowner", "", kAv);
                             return;
                         }
                     }
@@ -986,10 +1032,7 @@ default
                     {
                         if (OwnerCheck(kAv))
                         {
-                            g_sRequestType = g_sBlackListScan;
-                            g_kDialoger = kAv;
-                            g_iDialogerAuth = iAuth;
-                            llSensor("", "", AGENT, 10.0, PI);
+                            FetchAvi(iAuth, "blacklist", "", kAv);
                             return;
                         }
                     }
@@ -1091,7 +1134,7 @@ default
         }
     }
 
-    sensor(integer iNum_detected)
+/*    sensor(integer iNum_detected)
     {
         if(g_sRequestType == "owner" || g_sRequestType == "secowner" || g_sRequestType == "blacklist")
         {
@@ -1156,7 +1199,7 @@ default
             string sText = "Nobody other than yourself is in range. You can either add yourself or just walk closer to the person you want to add and try again.";
             g_kSensorMenuID = Dialog(g_kDialoger, sText, [llKey2Name(g_kWearer)], [UPMENU], 0, g_iDialogerAuth);
         }
-    }
+    } */
 
     on_rez(integer iParam)
     {
@@ -1173,6 +1216,7 @@ default
 
     http_response(key kID, integer iStatus, list lMeta, string sBody)
     {
+        /*
         if (kID == g_kHTTPID)
         {   //here's where we add owners or secowners, after getting their keys
             if (iStatus == 200)
@@ -1183,7 +1227,8 @@ default
             }
             else Notify(g_kDialoger, "Error: The internet is missing or moving slower than a snail.", FALSE);
         }
-        else if (kID == g_kGroupHTTPID)
+        */
+        if (kID == g_kGroupHTTPID)
         {
             g_sGroupName = "X";
             if (iStatus == 200)

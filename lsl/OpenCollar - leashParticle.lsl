@@ -854,13 +854,13 @@ default
                     if (llToLower(sValue) == "off") g_bParticleGlow = FALSE;
                     else g_bParticleGlow = TRUE;
                 }
+                SaveDefaultSettings(sToken, sValue);
             }
             // in case wearer is currently leashed
-            if (g_kLeashedTo != NULLKEY)
+            if (sMessage == "settings=sent" && g_kLeashedTo != NULLKEY)
             {
                 StartParticles(g_kParticleTarget);
             }
-            SaveDefaultSettings(sToken, sValue);
         }
         else if (iNum == LM_SETTING_DELETE)
         {

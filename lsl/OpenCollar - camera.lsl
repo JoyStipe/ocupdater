@@ -425,7 +425,7 @@ default
     
     run_time_permissions(integer iPerms)
     {
-        if (iPerms & PERMISSION_CONTROL_CAMERA)
+        if (iPerms & (PERMISSION_CONTROL_CAMERA | PERMISSION_TRACK_CAMERA))
         {
             llClearCameraParams();
         }

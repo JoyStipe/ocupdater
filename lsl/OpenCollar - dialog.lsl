@@ -60,7 +60,7 @@ list g_lRemoteMenus;
 
 integer g_iStrideLength = 11;
 // List of user keys who opt-out of chat-spammage, ie chose "off"
-list MRSBUN = []; // blatant monty python reference
+list MRSBUN = []; // blatant monty python reference - list of those who do not like spam
 // these two variables are for user-switch of menu-to-chat reflux
 integer CHATSPAM = TRUE; // default behavior
 string SPAMSWITCH = "verbose"; // lowercase chat-command token

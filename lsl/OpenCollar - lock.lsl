@@ -333,7 +333,6 @@ default
                 llMessageLinked(LINK_SET, RLV_CMD, "detach=y", NULL_KEY);
             }
         }
-
     }
     attach(key kID)
     {

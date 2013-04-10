@@ -323,25 +323,38 @@ MakeNamesList()
         AddName(sKey);
     }
 }
-Name2Key(string sName)
+/*Name2Key(string sName)
 {
     // Variant of N2K, uses SL's internal search engine instead of external databases
     string url = "http://www.w3.org/services/html2txt?url=";
     string escape = "http://vwrsearch.secondlife.com/client_search.php?session=00000000-0000-0000-0000-000000000000&q=";
     g_kHTTPID = llHTTPRequest(url + llEscapeURL(escape) + llEscapeURL(sName), [], "");
-}
+}*/
 
+FetchAvi(integer auth, string type, string name, key user)
+{
+    string out = llList2CSV(["getavi_", GetScriptID(), "add", type, name]) + "|";
+    integer i = 0;
+    list src = g_lNames;
+    list exclude; // build list of existing-listed keys to exclude from name search
+    for (; i < llGetListLength(src); i += 2)
+    {
+        exclude += [llList2String(src, i)];
+    }
+    out += llList2CSV(exclude);
+    llMessageLinked(LINK_THIS, auth, out, user);
+}
 AddName(string sKey)
 {
     if (~llListFindList(g_lNames, [sKey])) jump AddDone; // prevent dupes
     integer iInd = llListFindList(g_lOwners, [sKey]);
-    if (g_kHTTPID) // Name2Key
+    /*if (g_kHTTPID) // Name2Key
     {
         g_kHTTPID = NULL_KEY;
         g_lNames += [sKey, g_sTmpName];
         if (g_kTmpKey != NULL_KEY) Notify(g_kTmpKey, g_sTmpName + " has been successfully added to Exceptions User List.", FALSE);
-    }
-    else if (~iInd)
+    }*/
+    if (~iInd)
     {
         g_lNames += [sKey, llList2String(g_lOwners, iInd + 1)];
     }
@@ -514,7 +527,17 @@ integer UserCommand(integer iNum, string sStr, key kID)
         Menu(kID, "", iNum);
         jump UCDone;
     }
-    list lParts = llParseString2List(sStr, [" "], []); // ex,add,first,last at most
+    list lParts = llCSV2List(sStr);
+    if (llList2String(lParts, 0) == GetScriptID())
+    {
+        if (llList2String(lParts, 2) == "add" && llList2String(lParts, 3) == "ex")
+        {
+            g_kTmpKey = kID;
+            AddName(llList2String(lParts, 4));
+            return TRUE;
+        }
+    }
+    lParts = llParseString2List(sStr, [" "], []); // ex,add,first,last at most
     integer iInd = llGetListLength(lParts);
     if (iInd < 1 || iInd > 4 || llList2String(lParts, 0) != "ex") return FALSE;
     lParts = llDeleteSubList(lParts, 0, 0); // no longer need the "ex"
@@ -527,25 +550,16 @@ integer UserCommand(integer iNum, string sStr, key kID)
         else if (sCom == "other") PersonMenu(kID, g_lNames, "", iNum);
         else if (sCom == "add")
         {
-            g_kDialoger = kID;
-            g_iDialogerAuth = iNum;
-            llSensor("", "", AGENT, 10.0, PI);
+            FetchAvi(iNum, "ex", "", kID);
+            jump UCDone;
         }
         if (!llSubStringIndex(sCom, ":")) jump UCDone;// not done if we received a 1-who 1-exception case
     }
     string sVal = llList2String(lParts, 1);
     if (sCom == "add") // request to add specified user to names list - must be "add First Last" or "add uuid"
     {
-        g_iAuth = iNum;
-        g_kTmpKey = kID;
         if ((key)sVal) AddName(sVal);
-        else if (iInd == 3) Name2Key(g_sTmpName = llDumpList2String(llDeleteSubList(lParts, 0, 0), " "));
-        else
-        {
-            g_iAuth = 0;
-            g_kTmpKey = NULL_KEY;
-            Notify(kID, "<prefix>ex add <value> -- value must be an avi key or legacy name", FALSE);
-        }
+        else FetchAvi(iNum, "ex", sVal, kID);
         jump UCDone;
     }
     // anything else should be <prefix>ex user:command=value & may be strided with commas
@@ -585,13 +599,8 @@ integer UserCommand(integer iNum, string sStr, key kID)
         else if (~iNames) sWho = llList2String(g_lNames, iNames - 1); // name used & in list
         else // This who is (hopefully) a username & doesn't exist in our others list, yet.
         {
-            g_iAuth = iNum;
-            g_kTmpKey = kID;
-            Name2Key(g_sTmpName = sWho);
-            string note = "It will take a moment to retrieve the key for " + sWho;
-            note += ". Remaining requests will be processed shortly.";
-            Notify(kID, note, FALSE);
-            jump UCDone; // AddName/N2K will re-push the remaining requests when they finish
+            Notify(kID, "Sorry, but you must first add " + sWho + " to the list with <prefix>ex add " + sWho, FALSE);
+            jump nextwho;
         }
         // okay, now we have a key for sWho (if avatar) & they are in g_lNames - this will deliver all settings to the right places
         g_sUserCommand = "";
@@ -803,9 +812,7 @@ default
                 }
                 else if (sMessage == "Add")
                 {
-                    g_kDialoger = kAv;
-                    g_iDialogerAuth = iAuth;
-                    llSensor("", "", AGENT, 10.0, PI);
+                    FetchAvi(iAuth, "ex", "", kAv);
                 }
                 else if (sMessage == "Other") PersonMenu(kAv, g_lNames, "", iAuth);
             }
@@ -891,47 +898,11 @@ default
                     //g_lScan = [];
                 }
             }
-            else if(kID == g_kSensorMenuID)
-            {
-                Debug("dialog response: " + sStr);
-                list lMenuParams = llParseString2List(sStr, ["|"], []);
-                key kAv = (key)llList2String(lMenuParams, 0);
-                string sMessage = llList2String(lMenuParams, 1);
-                integer iPage = (integer)llList2String(lMenuParams, 2);
-                integer iAuth = (integer)llList2String(lMenuParams, 3);
-                if (sMessage == UPMENU) Menu(kAv, "", iAuth);
-                else
-                {
-                    string sTmp = llList2String(g_lOwners + g_lSecOwners + g_lScan + g_lNames, llListFindList(g_lOwners + g_lSecOwners + g_lScan + g_lNames, [sMessage])-1);
-                    ExMenu(kAv, sTmp, iAuth);
-                    g_lScan = [];
-                }
-            }
         }
-    }
-    http_response(key kID, integer iStatus, list lMeta, string sBody)
-    {
-        if (kID == g_kHTTPID && iStatus == 200)
-        {
-            key kAvi = (key)llList2String(llParseString2List(sBody, ["secondlife:///app/agent/", "/about"], []),1);
-            if (kAvi)
-            {
-                AddName((string)kAvi);
-                return;
-            }
-        }
-        if (g_kTmpKey != NULL_KEY) Notify(g_kTmpKey, "Unable to retrieve key for " + g_sTmpName, FALSE);
-        // shave the first entry out of usercommand, since the name/key is not valid
-        list lTemp = llDeleteSubList(llParseString2List(g_sUserCommand, [":"], []), 0, 1);
-        g_sUserCommand = llDumpList2String(lTemp, ":");
-        if (g_sUserCommand != "") UserCommand(g_iAuth, "ex " + g_sUserCommand, g_kTmpKey); // continue processing commands
-        g_iAuth = 0;
-        g_kTmpKey = g_kHTTPID = NULL_KEY;
-        g_sTmpName = g_sUserCommand = "";
     }
     dataserver(key kID, string sData)
     {
-        integer iIndex = llListFindList(g_lNames, [(string)kID]);
+        integer iIndex = llListFindList(g_lNames, [kID]);
         if (~iIndex)
         {
             llSetTimerEvent(0);
@@ -942,32 +913,6 @@ default
             g_kTmpKey = g_kTestKey = NULL_KEY;
             g_sTmpName = g_sUserCommand = "";
         }
-    }
-    sensor(integer iNum_detected)
-    {
-        list lButtons;
-        string sName;
-        integer i;
-        for(i = 0; i < iNum_detected; i++)
-        {
-            sName = llDetectedName(i);
-            lButtons += [sName];
-            g_lScan += [(string)llDetectedKey(i) ,sName];
-        }
-        // add wearer if not already in button list
-        // g_lScan += [(string)g_kWearer, llKey2Name(g_kWearer)];
-        if (llGetListLength(lButtons) > 0)
-        {
-            string sText = "Select who you would like to add.\nIf the one you want to add does not show, move closer and repeat or use the chat command.";
-            g_kSensorMenuID = Dialog(g_kDialoger, sText, lButtons, [UPMENU], 0, g_iDialogerAuth);
-        }
-        //llOwnerSay((string)llGetFreeMemory());
-    }
-
-    no_sensor()
-    {
-        Notify(g_kDialoger, "Nobody is in 10m range to be shown, either move closer or use the chat command to add someone who is not with you at this moment or offline.",FALSE);
-  
     }
     timer() // RequestAgentData fail
     {

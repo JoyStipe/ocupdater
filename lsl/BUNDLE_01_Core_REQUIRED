@@ -5,8 +5,10 @@ ITEM|!totallytransparent
 ITEM|~heightscalars
 ITEM|cutie
 SCRIPT|OpenCollar - cleanup
+SCRIPT|OpenCollar - BMC
 SCRIPT|OpenCollar - menu
 SCRIPT|OpenCollar - auth
+SCRIPT|OpenCollar - getavi
 SCRIPT|OpenCollar - listener
 SCRIPT|OpenCollar - dialog
 SCRIPT|OpenCollar - update
