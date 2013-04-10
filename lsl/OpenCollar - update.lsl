@@ -62,7 +62,7 @@ key g_kUpdaterOrb;
 
 // We check for the latest version number by looking at the "~version" notecard
 // inside the 'release' branch of the collar's Github repo.
-string version_check_url = "https://github.com/JoyStipe/ocupdater/blob/Project_Evolution/lsl/~version";
+string version_check_url = "https://raw.github.com/JoyStipe/ocupdater/Project_Evolution/lsl/~version";
 key github_version_request;
 
 // A request to this URL will trigger delivery of an updater.  We omit the
