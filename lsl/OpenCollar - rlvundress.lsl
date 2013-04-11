@@ -348,24 +348,25 @@ UpdateSettings()
             string sValue=llList2String(g_lSettings, n + 1);
             //Debug(llList2String(g_lSettings, n) + "=" + sValue);
             lNewList += [llList2String(g_lSettings, n) + "=" + llList2String(g_lSettings, n + 1)];
-            if (llGetListLength(sOption)==2
-                && (llList2String(sOption,0)=="addoutfit"
-                    ||llList2String(sOption,0)=="remoutfit")
-                && sValue=="n")
-                g_lLockedItems += [llList2String(sOption,1)];
-            if (llGetListLength(sOption)==1 && llList2String(sOption,0)=="remoutfit" && sValue=="n")
-                g_lLockedItems += [ALL];
-
-            if (llGetListLength(sOption)==2
-                && (llList2String(sOption,0)=="addattach"
-                    || llList2String(sOption,0)=="remattach"
-                    || llList2String(sOption,0)=="detach")
-                && sValue=="n"
-                && (~llListFindList(g_lLockedAttach, [llList2String(sOption,1)])))
-                g_lLockedAttach += [llList2String(sOption,1)];
+            if (llGetListLength(sOption)==1 && llList2String(sOption,0)=="remoutfit")
+            {
+                //JS: Should we just make it =[ALL] (instead of +=[ALL]) ? I mean, if its all locked, why list the items?
+                if (!~llListFindList(g_lLockedItems, [ALL])) g_lLockedItems = [ALL];
+            }
+            else if (llGetListLength(sOption)==2 && ~llSubStringIndex(llList2String(sOption, 0), "outfit"))
+            {
+                if (!~llListFindList(g_lLockedItems, [llList2String(sOption, 1)]) && !~llListFindList(g_lLockedItems, [ALL]))
+                    g_lLockedItems += [llList2String(sOption,1)];
+            }
+            else if (llGetListLength(sOption)==2 && ~llSubStringIndex(llList2String(sOption, 0), "tach"))
+            {
+                if (!~llListFindList(g_lLockedAttach, [llList2String(sOption,1)]))
+                    g_lLockedAttach += [llList2String(sOption,1)];
+            }
         }
         //output that string to viewer
         llMessageLinked(LINK_SET, RLV_CMD, llDumpList2String(lNewList, ","), NULL_KEY);
+        Debug("Loaded locks: Cloth- " + llList2CSV(g_lLockedItems) + ": Attach- " + llList2CSV(g_lLockedAttach));
     }
 }
 
@@ -853,4 +854,5 @@ default
     {
         llResetScript();
     }
+
 }
