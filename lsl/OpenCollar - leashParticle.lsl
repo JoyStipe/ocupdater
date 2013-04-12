@@ -748,18 +748,15 @@ default
                     }
                     else if (sButton == "+")
                     {
-                        g_vLeashGravity.z -=0.1;
+                        if (g_vLeashGravity == <0.0,0.0,-3.0>)
+                            Notify(kAv, "You have already reached maximum gravity.", FALSE);
+                        else g_vLeashGravity.z -= 0.1;
                     }
                     else if (sButton == "-")
                     {
                         if (g_vLeashGravity == <0.0,0.0,0.0>)
-                        {
-                            Notify(kAv, "You have reached already 0 leash-gravity.", FALSE);
-                        }
-                        else
-                        {
-                            g_vLeashGravity.z += 0.1;
-                        }
+                            Notify(kAv, "You have already reached 0 leash-gravity.", FALSE);
+                        else g_vLeashGravity.z += 0.1;
                     }
                     else if (sButton == "noGravity")
                     {
@@ -833,7 +830,7 @@ default
                 }
                 else if (sToken == "Gravity")
                 {
-                    g_vLeashGravity.z = -(float)sValue;
+                    g_vLeashGravity.z = (float)sValue;
                     SaveSettings(L_GRAVITY, (string)g_vLeashGravity, FALSE);
                     sValue = (string)g_vLeashGravity; // for default list save
                 }
