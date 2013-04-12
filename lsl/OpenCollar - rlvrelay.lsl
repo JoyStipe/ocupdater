@@ -585,7 +585,7 @@ CleanQueue()
     Dequeue();
 }
 
-// returns TRUE if it was a user command, FALSE if it is a LM from another subsystem
+// returns TRUE if it was a user command, FALSE if it is a LM from another subsystem
 integer UserCommand(integer iNum, string sStr, key kID)
 {
     if (iNum<COMMAND_OWNER || iNum>COMMAND_WEARER) return FALSE;
