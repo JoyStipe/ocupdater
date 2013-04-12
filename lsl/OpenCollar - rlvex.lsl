@@ -170,8 +170,8 @@ Menu(key kID, string sWho, integer iAuth)
         return;
     }
     
-    list lButtons = ["Owner", "Secowner", "Other", "Add"];
-    string sPrompt = "Set exceptions for the restrictions for RLV commands. Exceptions can be changed for owners, secowners and specific ones for other people. Add others with the \"Add\" button, use \"Other\" to set the specific restrictions for them later.";
+    list lButtons = ["Owner", "Secowner", "Other"];
+    string sPrompt = "Set exceptions for the restrictions for RLV commands. Exceptions can be changed for owners, secowners and specific ones for other people. Use \"Other\" to set the specific restrictions for them later.";
     g_kMenuID = Dialog(kID, sPrompt, lButtons, [UPMENU], 0, iAuth);
 }
 
@@ -184,10 +184,8 @@ PersonMenu(key kID, list lPeople, string sType, integer iAuth)
         return;
     }
     //g_sRequestType = sType;
-    string sPrompt = "Choose the person to change settings on.";
-    list lButtons;
-    //build a button list with the dances, and "More"
-    //get number of secowners
+    string sPrompt = "Choose the person to change settings on. Add others with the \"Add\" button";
+    list lButtons = ["Add"];
     integer iNum= llGetListLength(lPeople);
     integer n;
     for (n=1; n <= iNum/2; n = n + 1)
@@ -810,10 +808,6 @@ default
                     //give menu for secowners defaults
                     ExMenu(kAv, "secowner", iAuth);
                 }
-                else if (sMessage == "Add")
-                {
-                    FetchAvi(iAuth, "ex", "", kAv);
-                }
                 else if (sMessage == "Other") PersonMenu(kAv, g_lNames, "", iAuth);
             }
             else if (llListFindList(g_lExMenus, [kID]) != -1 )
@@ -891,6 +885,10 @@ default
                 integer iPage = (integer)llList2String(lMenuParams, 2);
                 integer iAuth = (integer)llList2String(lMenuParams, 3);
                 if (sMessage == UPMENU) Menu(kAv, "", iAuth);
+                else if (sMessage == "Add")
+                {
+                    FetchAvi(iAuth, "ex", "", kAv);
+                }
                 else
                 {
                     string sTmp = llList2String(g_lPersonMenu, (integer)sMessage*2-2); //g_lOwners + g_lSecOwners + g_lScan + g_lNames, llListFindList(g_lOwners + g_lSecOwners + g_lScan + g_lNames, [sMessage])-1);
