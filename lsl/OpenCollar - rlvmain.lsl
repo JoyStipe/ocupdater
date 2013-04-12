@@ -137,7 +137,7 @@ DoMenu(key kID, integer iAuth)
     }
 
     string sPrompt = "Restrained Love Viewer Options.";
-    if (g_iRlvVersion) sPrompt += "\nDetected version of RLVÂ API: "+(string)g_iRlvVersion;
+    if (g_iRlvVersion) sPrompt += "\nDetected version of RLV API: "+(string)g_iRlvVersion;
     kMenuID = Dialog(kID, sPrompt, lButtons, [UPMENU], 0, iAuth);
 }
 
@@ -300,7 +300,6 @@ ApplyRem(string sBehav)
         if (!iFound)
         {
             g_lBaked=llDeleteSubList(g_lBaked,iRestr,iRestr);
-            //if (sBehav!="no_hax")  removed:Â issue 1040
             SendCommand(sBehav+"=y");
         }
     }
