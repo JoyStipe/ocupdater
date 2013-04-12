@@ -69,7 +69,7 @@ key g_kActionsID;
 key g_kRootActionsID;
 integer g_iPage = 0;//Having a global is nice, if you redisplay the menu after an action on a folder.
 
-integer g_iListener;//Nan:do we still need this? -- SA:�of course. It's where the viewer talks.
+integer g_iListener;//Nan:do we still need this? -- SA: of course. It's where the viewer talks.
 
 // Asynchronous menu request. Alas still needed since some menus are triggered after an answer from the viewer.
 key g_kAsyncMenuUser;
@@ -152,9 +152,9 @@ QueryFolders(string sType)
 string lockFolderButton(integer iLockState, integer iLockNum, integer iAuth)
 {
     string sOut;
-    if ((iLockState >> (4 + iLockNum)) & 0x1) sOut = "?";
-    else if ((iLockState >> iLockNum) & 0x1) sOut = "?";
-    else sOut = "?";
+    if ((iLockState >> (4 + iLockNum)) & 0x1) sOut = "☔";
+    else if ((iLockState >> iLockNum) & 0x1) sOut = "✔";
+    else sOut = "✘";
     if (iLockNum == 0) sOut += LOCK_ATTACH;
     else if (iLockNum == 1) sOut += LOCK_DETACH;
     else if (iLockNum == 2) sOut += LOCK_ATTACH_ALL;
@@ -166,8 +166,8 @@ string lockFolderButton(integer iLockState, integer iLockNum, integer iAuth)
 string lockUnsharedButton(integer iLockNum, integer iAuth)
 {
     string sOut;
-    if ((g_iUnsharedLocks >> iLockNum) & 0x1) sOut = "?";
-    else sOut = "?";
+    if ((g_iUnsharedLocks >> iLockNum) & 0x1) sOut = "✔";
+    else sOut = "✘";
     if (iLockNum == 1) sOut += "Lk Unsh Wear";
     else if  (iLockNum == 0) sOut += "Lk Unsh Remove";
     if (iAuth > COMMAND_GROUP) sOut = "("+sOut+")";
@@ -223,16 +223,16 @@ string folderIcon(integer iState)
     string sOut = "";
     integer iStateThis = iState / 10;
     integer iStateSub = iState % 10;
-    if  (iStateThis==0) sOut += "?"; //?";
-    else if (iStateThis==1) sOut += "?";
-    else if (iStateThis==2) sOut += "?";
-    else if (iStateThis==3) sOut += "?";
+    if  (iStateThis==0) sOut += "⬚"; //▪";
+    else if (iStateThis==1) sOut += "◻";
+    else if (iStateThis==2) sOut += "◩";
+    else if (iStateThis==3) sOut += "◼";
     else sOut += " ";
 //    sOut += "/";
-    if (iStateSub==0) sOut += "?";//?";
-    else if (iStateSub==1) sOut += "?";
-    else if (iStateSub==2) sOut += "?";
-    else if (iStateSub==3) sOut += "?";
+    if (iStateSub==0) sOut += "⬚";//▪";
+    else if (iStateSub==1) sOut += "◻";
+    else if (iStateSub==2) sOut += "◩";
+    else if (iStateSub==3) sOut += "◼";
     else sOut += " ";
     return sOut;
 }
@@ -242,13 +242,13 @@ integer StateFromButton(string sButton)
     string sIconThis = llGetSubString(sButton, 0, 0);
     string sIconSub = llGetSubString(sButton, 1, 1);
     integer iState;
-    if (sIconThis=="?") iState = 1;
-    else if (sIconThis=="?") iState = 2;
-    else if (sIconThis=="?") iState = 3;
+    if (sIconThis=="◻") iState = 1;
+    else if (sIconThis=="◩") iState = 2;
+    else if (sIconThis=="◼") iState = 3;
     iState *= 10;
-    if (sIconSub=="?") iState +=1;
-    else if (sIconSub=="?") iState +=2;
-    else if (sIconSub=="?") iState += 3;
+    if (sIconSub=="◻") iState +=1;
+    else if (sIconSub=="◩") iState +=2;
+    else if (sIconSub=="◼") iState += 3;
     return iState;
 }
 
