@@ -38,8 +38,6 @@ integer DIALOG_TIMEOUT = -9002;
 
 integer g_iCharLimit = 12;
 
-//string UPMENU = "â� ‘";
-//string MORE = "â� ’";
 string UPMENU = "^";
 
 key g_kDialogID;
@@ -161,16 +159,6 @@ ResetCharIndex() {
     g_sCharIndex  = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`";
     g_sCharIndex += "abcdefghijklmnopqrstuvwxyz{|}~\n\n\n\n\n";
 
-    // special UTF-8 chars for European languages // SALAHZAR special chars according to a selection from CP850
-    // these 80 chars correspond to the following chars in CP850 codepage: (some are not viewable in editor)
-    // rows(11)="Ã‡Ã¼Ã©Ã¢Ã¤Ã� Ã¥Ã§ÃªÃ«"
-    // rows(12)="Ã¨Ã¯Ã®Ã¬Ã„Ã…Ã‰Ã¦Ã� â—„"
-    // rows(13)="Ã¶Ã²Ã»Ã¹Ã¿Ã–ÃœÂ¢Â£Â¥"
-    // rows(14)="â‚§Æ’Ã¡Ã­Ã³ÃºÃ±Ã‘ÂªÂº"
-    // rows(15)="Â¿âŒÂ¬Â½Â¼Â¡Â«Â»Î±ÃŸ"
-    // rows(16)="Î“Ï€Î£ÏƒÂµÏ„Î¦Î˜Î©Î´"
-    // rows(17)="âˆžÏ� Îµâˆ©â‰¡Â±â‰¥â‰¤âŒ� âŒ¡"
-    // rows(18)="Ã·â‰ˆÂ°âˆ™Â·âˆšâ¿Â²â‚¬ "
     g_lDecode= [ "%C3%87", "%C3%BC", "%C3%A9", "%C3%A2", "%C3%A4", "%C3%A0", "%C3%A5", "%C3%A7", "%C3%AA", "%C3%AB" ];
     g_lDecode+=[ "%C3%A8", "%C3%AF", "%C3%AE", "%C3%AC", "%C3%84", "%C3%85", "%C3%89", "%C3%A6", "%C3%AE", "xxxxxx" ];
     g_lDecode+=[ "%C3%B6", "%C3%B2", "%C3%BB", "%C3%B9", "%C3%BF", "%C3%96", "%C3%9C", "%C2%A2", "%C2%A3", "%C2%A5" ];
