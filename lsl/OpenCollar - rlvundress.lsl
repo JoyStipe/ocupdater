@@ -350,12 +350,11 @@ UpdateSettings()
             lNewList += [llList2String(g_lSettings, n) + "=" + llList2String(g_lSettings, n + 1)];
             if (llGetListLength(sOption)==1 && llList2String(sOption,0)=="remoutfit")
             {
-                //JS: Should we just make it =[ALL] (instead of +=[ALL]) ? I mean, if its all locked, why list the items?
-                if (!~llListFindList(g_lLockedItems, [ALL])) g_lLockedItems = [ALL];
+                if (!~llListFindList(g_lLockedItems, [ALL])) g_lLockedItems += [ALL];
             }
             else if (llGetListLength(sOption)==2 && ~llSubStringIndex(llList2String(sOption, 0), "outfit"))
             {
-                if (!~llListFindList(g_lLockedItems, [llList2String(sOption, 1)]) && !~llListFindList(g_lLockedItems, [ALL]))
+                if (!~llListFindList(g_lLockedItems, [llList2String(sOption, 1)]))
                     g_lLockedItems += [llList2String(sOption,1)];
             }
             else if (llGetListLength(sOption)==2 && ~llSubStringIndex(llList2String(sOption, 0), "tach"))
@@ -543,8 +542,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
         {
             if (llListFindList(g_lLockedAttach, [sPoint]) == -1) g_lLockedAttach += [sPoint];
             Notify(kID, g_sWearerName+"'s "+sPoint+" attachment point is now locked.", TRUE);
-            llMessageLinked(LINK_SET, iNum,  "addattach:" + sPoint + "=n", kID);
-            llMessageLinked(LINK_SET, iNum,  "remattach:" + sPoint + "=n", kID);
+            llMessageLinked(LINK_SET, iNum,  "detach:" + sPoint + "=n", kID);
         }
         else
         {
@@ -587,8 +585,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
         {
             string sMessage = llGetSubString(sStr, 17, -1);
         {
-            llMessageLinked(LINK_SET, iNum,  "addattach:" + sMessage + "=y", kID);
-            llMessageLinked(LINK_SET, iNum,  "remattach:" + sMessage + "=y", kID);
+            llMessageLinked(LINK_SET, iNum,  "detach:" + sMessage + "=y", kID);
             Notify(kID, g_sWearerName+"'s "+sMessage+" has been unlocked.", TRUE);
             integer iIndex = llListFindList(g_lLockedAttach,[sMessage]);
             if (iIndex!=-1) g_lLockedAttach = llDeleteSubList(g_lLockedAttach,iIndex,iIndex);
@@ -854,5 +851,4 @@ default
     {
         llResetScript();
     }
-
 }

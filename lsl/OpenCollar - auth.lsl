@@ -810,7 +810,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
 }
 SetPrefix(string sValue)
 {
-    if (sValue != "auto" && sValue != "") g_sPrefix = sValue;
+    if (sValue != "auto") g_sPrefix = sValue;
     else
     {
         list name = llParseString2List(llKey2Name(g_kWearer), [" "], []);
@@ -818,6 +818,7 @@ SetPrefix(string sValue)
         init += llGetSubString(llList2String(name, 1), 0, 0);
         g_sPrefix = llToLower(init);
     }
+    Debug("Prefix set to: " + g_sPrefix);
 }
 default
 {
@@ -825,7 +826,7 @@ default
     {   //until set otherwise, wearer is owner
         Debug((string)llGetFreeMemory());
         g_kWearer = llGetOwner();
-        SetPrefix("");
+        SetPrefix("auto");
         //added for attachment auth
         g_iInterfaceChannel = (integer)("0x" + llGetSubString(g_kWearer,30,-1));
         if (g_iInterfaceChannel > 0) g_iInterfaceChannel = -g_iInterfaceChannel;

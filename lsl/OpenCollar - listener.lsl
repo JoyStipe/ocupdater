@@ -122,7 +122,7 @@ SetListeners()
 
 SetPrefix(string sValue)
 {
-    if (sValue != "auto" && sValue != "") g_sPrefix = sValue;
+    if (sValue != "auto") g_sPrefix = sValue;
     else
     {
         list name = llParseString2List(llKey2Name(g_kWearer), [" "], []);
@@ -130,6 +130,7 @@ SetPrefix(string sValue)
         init += llGetSubString(llList2String(name, 1), 0, 0);
         g_sPrefix = llToLower(init);
     }
+    Debug("Prefix set to: " + g_sPrefix);
 }
 
 string StringReplace(string sSrc, string sFrom, string sTo)
@@ -196,10 +197,10 @@ default
     state_entry()
     {
         g_kWearer = llGetOwner();
-        SetPrefix("");
+        SetPrefix("auto");
         g_iHUDChan = GetOwnerChannel(g_kWearer, 1111); // persoalized channel for this sub
         SetListeners();
-        llMessageLinked(LINK_SET, LM_SETTING_REQUEST, "Global_prefix", NULL_KEY);
+        //llMessageLinked(LINK_SET, LM_SETTING_REQUEST, "Global_prefix", NULL_KEY);
         //llMessageLinked(LINK_SET, LM_SETTING_REQUEST, "channel", NULL_KEY);
     }
 
@@ -315,7 +316,6 @@ default
 
     link_message(integer iSender, integer iNum, string sStr, key kID)
     {
-
         if (iNum >= COMMAND_OWNER && iNum <= COMMAND_WEARER)
         {
             list lParams = llParseString2List(sStr, [" "], []);
@@ -337,7 +337,13 @@ default
             {
                 if (sCommand == "prefix")
                 {
-                    SetPrefix(llList2String(lParams, 1));
+                    string value = llList2String(lParams, 1);
+                    if (value == "")
+                    {
+                        Notify(kID,"prefix: " + g_sPrefix, FALSE);
+                        return;
+                    }
+                    SetPrefix(value);
                     SetListeners();
                     Notify(kID, "\n" + llKey2Name(g_kWearer) + "'s prefix is '" + g_sPrefix + "'.\nTouch the collar or say '" + g_sPrefix + "menu' for the main menu.\nSay '" + g_sPrefix + "help' for a list of chat commands.", FALSE);
                     llMessageLinked(LINK_SET, LM_SETTING_SAVE, "Global_prefix=" + g_sPrefix, NULL_KEY);
@@ -430,6 +436,7 @@ default
             string sValue = llList2String(lParams, 1);
             if (sToken == "Global_prefix")
             {
+                if (sValue == "") sValue = "auto";
                 SetPrefix(sValue);
                 //llInstantMessage(g_kWearer, "Loaded prefix " + g_sPrefix + " from database.");
                 SetListeners();
@@ -460,7 +467,7 @@ default
         }
 //        else if (iNum == LM_SETTING_EMPTY && sStr == "prefix")
 //        {
-//            SetPrefix("");
+//            SetPrefix("auto");
 //        }
         else if (iNum == POPUP_HELP)
         {
