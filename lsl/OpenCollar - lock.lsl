@@ -228,7 +228,7 @@ default
                 }
                 else Notify(kID, "Sorry, only primary owners and wearer can lock the collar.", FALSE);
             }
-            else if (sStr == "unlock" || (g_iLocked && sStr == "togglelock"))
+            else if (sStr == "runaway" || sStr == "unlock" || (g_iLocked && sStr == "togglelock"))
             {
                 if (iNum == COMMAND_OWNER)
                 {  //primary owners can lock and unlock. no one else
@@ -238,7 +238,6 @@ default
                 }
                 else Notify(kID, "Sorry, only primary owners can unlock the collar.", FALSE);
             }
-            
             else if (sStr == "menu " + LOCK)
             {
                 if (iNum == COMMAND_OWNER || kID == g_kWearer )
@@ -299,6 +298,10 @@ default
             {
                 g_lOwners = llParseString2List(sValue, [","], []);
             }
+        }
+        else if (iNum == LM_SETTING_DELETE)
+        {
+            if (sStr == "auth_owner") g_lOwners = [];
         }
         else if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu)
         {

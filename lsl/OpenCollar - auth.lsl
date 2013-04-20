@@ -801,10 +801,6 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
                 AuthMenu(kID, iNum);
             }
         }
-        else if (sCommand == "reset")
-        {
-            llResetScript();
-        }
     }
     return TRUE;
 }
@@ -864,11 +860,9 @@ default
                     }
                 }
                 llMessageLinked(LINK_THIS, LM_SETTING_DELETE, GetScriptID() + "all", NULL_KEY);
-                Notify(g_kWearer, "Runaway finished, the collar will now reset!",FALSE);
+                Notify(g_kWearer, "Runaway finished, the collar will now release all locks!",FALSE);
                 // moved reset request from settings to here to allow noticifation of owners.
                 llMessageLinked(LINK_SET, COMMAND_OWNER, "runaway", kID); // this is not a LM loop, since it is now really authed
-                llMessageLinked(LINK_SET, COMMAND_OWNER, "resetscripts", kID);
-                // notice the order is important: first "runaway" -> clears settings, then only other scripts are reset and may query their settings
                 llResetScript();
             }
             else
@@ -1134,74 +1128,6 @@ default
 
         }
     }
-
-/*    sensor(integer iNum_detected)
-    {
-        if(g_sRequestType == "owner" || g_sRequestType == "secowner" || g_sRequestType == "blacklist")
-        {
-            integer i;
-            integer iFoundAvi = FALSE;
-            for (i = 0; i < iNum_detected; i++)
-            {//see if sensor picked up person with name we were given in chat command (g_sTmpName).  case insensitive
-                if(llToLower(g_sTmpName) == llToLower(llDetectedName(i)))
-                {
-                    iFoundAvi = TRUE;
-                    NewPerson(llDetectedKey(i), llDetectedName(i), g_sRequestType);
-                    i = iNum_detected;//a clever way to jump out of the loop.  perhaps too clever?
-                }
-            }
-            if(!iFoundAvi)
-            {
-                if(g_sTmpName == llKey2Name(g_kWearer))
-                {
-                    NewPerson(g_kWearer, llKey2Name(g_kWearer), g_sRequestType);
-                }
-                else
-                {
-                    Name2Key(g_sTmpName);
-                }
-            }
-        }
-        else if(g_sRequestType == g_sOwnerScan || g_sRequestType == g_sSecOwnerScan || g_sRequestType == g_sBlackListScan)
-        {
-            list lButtons;
-            string sName;
-            integer i;
-
-            for(i = 0; i < iNum_detected; i++)
-            {
-                sName = llDetectedName(i);
-        //actual label length is taken care of by dialog helper
-                lButtons += [sName];
-            }
-            //add wearer if not already in button list
-            sName = llKey2Name(g_kWearer);
-            if (llListFindList(lButtons, [sName]) == -1)
-            {
-                lButtons = [sName] + lButtons;
-            }
-            if (llGetListLength(lButtons) > 0)
-            {
-                string sText = "Select who you would like to add.\nIf the one you want to add does not show, move closer and repeat or use the chat command.";
-                g_kSensorMenuID = Dialog(g_kDialoger, sText, lButtons, [UPMENU], 0, g_iDialogerAuth);
-            }
-        }
-    }
-
-    no_sensor()
-    {
-        if(g_sRequestType == "owner" || g_sRequestType == "secowner" || g_sRequestType == "blacklist")
-        {
-            //reformat name with + in place of spaces
-            Name2Key(g_sTmpName);
-        }
-        else if(g_sRequestType == g_sOwnerScan || g_sRequestType == g_sSecOwnerScan || g_sRequestType == g_sBlackListScan)
-        {
-            string sText = "Nobody other than yourself is in range. You can either add yourself or just walk closer to the person you want to add and try again.";
-            g_kSensorMenuID = Dialog(g_kDialoger, sText, [llKey2Name(g_kWearer)], [UPMENU], 0, g_iDialogerAuth);
-        }
-    } */
-
     on_rez(integer iParam)
     {
         llResetScript();

@@ -735,6 +735,11 @@ default
                 }
             }
         }
+        else if (iNum == LM_SETTING_DELETE)
+        {
+            if (sStr == "auth_owner") g_lOwners = [];
+            else if (sStr == "auth_secowner") g_lSecOwners = [];
+        }
         else if (iNum == LM_SETTING_SAVE)
         {
             //handle saving new owner here

@@ -546,6 +546,10 @@ default
                 Debug("owners: " + sValue);
             }
         }
+        else if (iNum == LM_SETTING_DELETE)
+        {
+        	if (sStr == "auth_owner") g_lOwners = [];
+        }
         else if (iNum == LM_SETTING_RESPONSE)
         {
             list lParams = llParseString2List(sStr, ["="], []);

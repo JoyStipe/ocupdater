@@ -54,7 +54,6 @@ string UPMENU = "^";
 string GIVECARD = "Guide";
 string HELPCARD = "OpenCollar Guide";
 string REFRESH_MENU = "Fix Menus";
-string RESET_MENU = "ResetScripts";
 
 Debug(string text)
 {
@@ -126,8 +125,7 @@ MenuInit()
     }
     //give the help menu GIVECARD and REFRESH_MENU buttons    
     HandleMenuResponse("Help/Debug|" + GIVECARD);
-    HandleMenuResponse("Help/Debug|" + REFRESH_MENU);
-    HandleMenuResponse("Help/Debug|" + RESET_MENU);       
+    HandleMenuResponse("Help/Debug|" + REFRESH_MENU);     
     
     llMessageLinked(LINK_SET, MENUNAME_REQUEST, "Main", ""); 
 }
@@ -168,7 +166,6 @@ integer UserCommand(integer iNum, string sStr, key kID)
 
     list lParams = llParseString2List(sStr, [" "], []);
     string sCmd = llList2String(lParams, 0);
-
     if (sStr == "menu") Menu("Main", kID, iNum);
     else if (sCmd == "menu")
     {
@@ -273,10 +270,6 @@ default
                     else if (sMessage == REFRESH_MENU)
                     {//send a command telling other plugins to rebuild their menus
                         UserCommand(iAuth, "refreshmenu", kAv);
-                    }
-                    else if (sMessage == RESET_MENU)
-                    {//send a command to reset scripts
-                        UserCommand(iAuth, "resetscripts", kAv);
                     }
                     else
                     {

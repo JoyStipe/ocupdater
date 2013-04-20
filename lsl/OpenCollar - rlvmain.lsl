@@ -451,7 +451,6 @@ default{
 
     link_message(integer iSender, integer iNum, string sStr, key kID)
     {
-
         if (iNum == LM_SETTING_SAVE)
         {
             list lParams = llParseString2List(sStr, ["="], []);
@@ -462,6 +461,10 @@ default{
                 g_lOwners = llParseString2List(sValue, [","], []);
                 Debug("owners: " + sValue);
             }
+        }
+        else if (iNum == LM_SETTING_DELETE)
+        {
+            if (sStr == "auth_owner") g_lOwners = [];
         }
         else if (iNum == LM_SETTING_RESPONSE)
         {

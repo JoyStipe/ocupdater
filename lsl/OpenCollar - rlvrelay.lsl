@@ -19,6 +19,7 @@ integer LM_SETTING_SAVE = 2000;//scripts send messages on this channel to have s
                             //str must be in form of "token=value"
 integer LM_SETTING_REQUEST = 2001;//when startup, scripts send requests for settings on this channel
 integer LM_SETTING_RESPONSE = 2002;//the httpdb script will send responses on this channel
+integer LM_SETTING_DELETE = 2003;
 
 integer MENUNAME_REQUEST = 3000;
 integer MENUNAME_RESPONSE = 3001;
@@ -763,6 +764,12 @@ default
             else if (iToken == "auth_owner") g_lCollarOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
             else if (iToken == "auth_secowner") g_lCollarSecOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
             else if (iToken == "auth_blacklist") g_lCollarBlackList = llParseString2List(llList2String(lParams, 1), [","], []);
+        }
+        else if (iNum == LM_SETTING_DELETE)
+        {
+            if (sStr == "auth_owner") g_lCollarOwnersList = [];
+            else if (sStr == "auth_secowner") g_lCollarSecOwnersList = [];
+            else if (sStr == "auth_blacklist") g_lCollarBlackList = [];
         }
         else if (iNum == LM_SETTING_SAVE)
         {   //this is tricky since our db sValue contains equals signs

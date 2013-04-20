@@ -617,7 +617,7 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
                 }
             }
         }
-        else if (sMesL == "unleash" || sMesL == "unfollow" || (sMesL == "toggleleash" && NULL_KEY != g_kLeashedTo))
+        else if (sMesL == "runaway" || sMesL == "unleash" || sMesL == "unfollow" || (sMesL == "toggleleash" && NULL_KEY != g_kLeashedTo))
         {
             if (CheckCommandAuth(kMessageID, iAuth)) Unleash(kMessageID);
         }
