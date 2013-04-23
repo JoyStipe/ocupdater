@@ -185,7 +185,7 @@ default {
                     g_iLastRank = iNum;
                     ShowText(g_sText);
                 }
-            } else if (sStr == "reset" && (iNum == COMMAND_OWNER || iNum == COMMAND_WEARER)) {
+            } else if (sStr == "runaway" && iNum == COMMAND_OWNER) {
                 g_sText = "";
                 HideText();
                 llResetScript();

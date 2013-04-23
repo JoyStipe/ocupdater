@@ -360,14 +360,7 @@ default
                     Notify(kID, "Hiden", FALSE);
                 }
             }
-            else if (iNum == COMMAND_OWNER && sStr == "reset")
-            {
-                SetAllElementsAlpha(1.0);
-                // no more self - resets
-                //    llResetScript();
-            }
-            //else if (iNum == COMMAND_WEARER && (sStr == "reset" || sStr == "runaway"))
-            else if ((iNum == COMMAND_WEARER || kID == llGetOwner()) && (sStr == "reset" || sStr == "runaway"))
+            else if (iNum == COMMAND_OWNER && sStr == "runaway")
             {
                 SetAllElementsAlpha(1.0);
                 // no more self - resets

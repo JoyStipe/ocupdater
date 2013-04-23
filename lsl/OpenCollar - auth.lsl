@@ -843,7 +843,7 @@ default
             integer iAuth = Auth((string)kID, FALSE);
             if ((iNum == COMMAND_OWNER || kID == g_kWearer) && (sStr=="reset"))
             {
-                Notify(kID, "The command 'reset' is deprecated. Please use 'runaway' to leave the owner and clear all settings or 'resetscripts' to only reset the script in the collar.", FALSE);
+                Notify(kID, "The command 'reset' is deprecated. Please use 'runaway' to leave the owner and clear all lock settings in the collar.", FALSE);
             }
             else if ((iAuth == COMMAND_OWNER || kID == g_kWearer) && sStr == "runaway")
             {   // note that this will work *even* if the wearer is blacklisted or locked out
@@ -860,8 +860,8 @@ default
                     }
                 }
                 llMessageLinked(LINK_THIS, LM_SETTING_DELETE, GetScriptID() + "all", NULL_KEY);
-                Notify(g_kWearer, "Runaway finished, the collar will now release all locks!",FALSE);
-                // moved reset request from settings to here to allow noticifation of owners.
+                Notify(g_kWearer, "Runaway finished, the collar will now release locks!",FALSE);
+                llMessageLinked(LINK_SET, COMMAND_OWNER, "clear", kID); // clear out rlv restrictions
                 llMessageLinked(LINK_SET, COMMAND_OWNER, "runaway", kID); // this is not a LM loop, since it is now really authed
                 llResetScript();
             }
@@ -1128,6 +1128,7 @@ default
 
         }
     }
+
     on_rez(integer iParam)
     {
         llResetScript();

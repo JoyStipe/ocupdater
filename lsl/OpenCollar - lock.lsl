@@ -299,10 +299,6 @@ default
                 g_lOwners = llParseString2List(sValue, [","], []);
             }
         }
-        else if (iNum == LM_SETTING_DELETE)
-        {
-            if (sStr == "auth_owner") g_lOwners = [];
-        }
         else if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu)
         {
             if (g_iLocked)

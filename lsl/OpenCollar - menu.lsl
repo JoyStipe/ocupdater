@@ -125,7 +125,7 @@ MenuInit()
     }
     //give the help menu GIVECARD and REFRESH_MENU buttons    
     HandleMenuResponse("Help/Debug|" + GIVECARD);
-    HandleMenuResponse("Help/Debug|" + REFRESH_MENU);     
+    HandleMenuResponse("Help/Debug|" + REFRESH_MENU);      
     
     llMessageLinked(LINK_SET, MENUNAME_REQUEST, "Main", ""); 
 }
@@ -163,7 +163,6 @@ integer UserCommand(integer iNum, string sStr, key kID)
     // /SA
     if (iNum == COMMAND_EVERYONE) return TRUE;  // No command for people with no privilege in this plugin.
     else if (iNum > COMMAND_EVERYONE || iNum < COMMAND_OWNER) return FALSE; // sanity check
-
     list lParams = llParseString2List(sStr, [" "], []);
     string sCmd = llList2String(lParams, 0);
     if (sStr == "menu") Menu("Main", kID, iNum);

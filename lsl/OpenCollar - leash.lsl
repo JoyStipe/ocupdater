@@ -617,7 +617,8 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
                 }
             }
         }
-        else if (sMesL == "runaway" || sMesL == "unleash" || sMesL == "unfollow" || (sMesL == "toggleleash" && NULL_KEY != g_kLeashedTo))
+        else if (sMesL == "runaway" && iAuth == COMMAND_OWNER) Unleash(kMessageID);
+        else if (sMesL == "unleash" || sMesL == "unfollow" || (sMesL == "toggleleash" && NULL_KEY != g_kLeashedTo))
         {
             if (CheckCommandAuth(kMessageID, iAuth)) Unleash(kMessageID);
         }
@@ -684,11 +685,7 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
                 Notify(kMessageID,"Only the wearer can change the rotate setting", FALSE);
             }
         }
-        else jump othermenu;
-        if (g_iReturnMenu) LeashMenu(kMessageID, iAuth);
-        return TRUE;
-        @othermenu;
-        if(sMesL == "leashmenu" || sMessage == "menu " + BUTTON_SUBMENU)
+        else if(sMesL == "leashmenu" || sMessage == "menu " + BUTTON_SUBMENU)
         {
             if (CheckCommandAuth(kMessageID, iAuth)) LeashMenu(kMessageID, iAuth);
             else if (sMesL == "menu " + BUTTON_SUBMENU) {llMessageLinked(LINK_SET, iAuth, "menu " + BUTTON_PARENTMENU, kMessageID); return TRUE;}
@@ -696,7 +693,6 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
         else if (sComm == "leashto")
         {
             if (!CheckCommandAuth(kMessageID, iAuth)) return TRUE;
-
             string sChattedTarget = llList2String(lParam, 1);
             if (sMesL == sComm) // no parameters were passed
             {
@@ -717,7 +713,6 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
         else if(sComm == "followtarget")
         {
             if (!CheckCommandAuth(kMessageID, iAuth)) return TRUE;
-            
             DisplayTargetMenu(kMessageID, iAuth, SENSORMODE_FIND_TARGET_FOR_FOLLOW_MENU);
         }
         else if (sComm == "length")
@@ -757,7 +752,6 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
                 ActOnChatTarget(sChattedTarget, kMessageID, iAuth, SENSORMODE_FIND_TARGET_FOR_POST_CHAT);
             }
         }
-        return TRUE;
     }
     else if (iAuth == COMMAND_LEASH_SENSOR)
     {
@@ -771,7 +765,6 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
             g_vPos = llList2Vector(llGetObjectDetails(g_kLeashedTo,[OBJECT_POS]),0);
             g_iTargetHandle = llTarget(g_vPos, g_fLength);
         }
-        return TRUE;
     }
     else if (iAuth == COMMAND_EVERYONE)
     {
@@ -791,9 +784,10 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
                 YankTo(kMessageID);
             }
         }
-        return TRUE;
     }
     else return FALSE;
+    if (g_iReturnMenu) LeashMenu(kMessageID, iAuth);
+    return TRUE;
 }
 // ---------------------------------------------
 // ------ IMPLEMENTATION ------

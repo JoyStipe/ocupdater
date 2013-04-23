@@ -591,6 +591,11 @@ integer UserCommand(integer iNum, string sStr, key kID)
 {
     if (iNum<COMMAND_OWNER || iNum>COMMAND_WEARER) return FALSE;
     if (llSubStringIndex(sStr,"relay") && sStr != "menu "+g_sSubMenu) return TRUE;
+    if (iNum == COMMAND_OWNER && sStr == "runaway")
+    {
+        g_lCollarOwnersList = g_lCollarSecOwnersList = g_lCollarBlackList = [];
+        return TRUE;
+    }
     if (!g_iRLV)
     {
         notify(kID, "RLV features are now disabled in this collar. You can enable those in RLV submenu. Opening it now.", FALSE);
@@ -764,12 +769,6 @@ default
             else if (iToken == "auth_owner") g_lCollarOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
             else if (iToken == "auth_secowner") g_lCollarSecOwnersList = llParseString2List(llList2String(lParams, 1), [","], []);
             else if (iToken == "auth_blacklist") g_lCollarBlackList = llParseString2List(llList2String(lParams, 1), [","], []);
-        }
-        else if (iNum == LM_SETTING_DELETE)
-        {
-            if (sStr == "auth_owner") g_lCollarOwnersList = [];
-            else if (sStr == "auth_secowner") g_lCollarSecOwnersList = [];
-            else if (sStr == "auth_blacklist") g_lCollarBlackList = [];
         }
         else if (iNum == LM_SETTING_SAVE)
         {   //this is tricky since our db sValue contains equals signs

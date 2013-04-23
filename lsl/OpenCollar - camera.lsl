@@ -394,12 +394,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             llSetTimerEvent(g_fReapeat);
         }
     }
-    else if (iNum == COMMAND_OWNER  || kID == g_kWearer && sStr == "runaway")
-    {
-        ClearCam();
-        llResetScript();
-    }
-    else if (iNum == COMMAND_OWNER && sStr == "reset")
+    else if (iNum == COMMAND_OWNER && sStr == "runaway")
     {
         ClearCam();
         llResetScript();

@@ -287,7 +287,7 @@ ClearSettings()
 integer UserCommand(integer iNum, string sStr, key kID)
 {
     if (iNum < COMMAND_OWNER || iNum > COMMAND_WEARER) return FALSE;
-    if ((sStr == "reset" || sStr == "runaway") && (kID == g_kWearer || iNum == COMMAND_WEARER))
+    if (sStr == "runaway" && iNum == COMMAND_OWNER)
     {   //clear db, reset script
         //llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
         //llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sExToken, NULL_KEY);

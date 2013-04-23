@@ -517,8 +517,8 @@ ClearEx()
 
 integer UserCommand(integer iNum, string sStr, key kID)
 {
-    if ((sStr == "reset" || sStr == "runaway") && (iNum == COMMAND_OWNER || iNum == COMMAND_WEARER)) llResetScript();
     if (iNum != COMMAND_OWNER) return FALSE; // Only Primary Owners
+    if (sStr == "runaway") llResetScript();
     string sLower = llToLower(sStr);
     if (sLower == "ex" || sLower == "menu " + llToLower(g_sSubMenu))
     {
@@ -734,11 +734,6 @@ default
                     SetAllExs("");//sendcommands
                 }
             }
-        }
-        else if (iNum == LM_SETTING_DELETE)
-        {
-            if (sStr == "auth_owner") g_lOwners = [];
-            else if (sStr == "auth_secowner") g_lSecOwners = [];
         }
         else if (iNum == LM_SETTING_SAVE)
         {
