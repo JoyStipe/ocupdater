@@ -16,7 +16,8 @@ list g_lRLVcmds = [
     "viewscript",
     "viewtexture",
     "showhovertexthud",
-    "showhovertextworld"
+    "showhovertextworld",
+    "showhovertext"
         ];
 
 list g_lPrettyCmds = [ //showing menu-friendly command names for each item in g_lRLVcmds
@@ -30,7 +31,8 @@ list g_lPrettyCmds = [ //showing menu-friendly command names for each item in g_
     "Scripts",
     "Textures",
     "Hud",
-    "World"
+    "World",
+    "Title"
         ];
 
 list g_lDescriptions = [ //showing descriptions for commands
@@ -44,12 +46,15 @@ list g_lDescriptions = [ //showing descriptions for commands
     "View Scripts",
     "View Textures",
     "See hover text from Hud objects",
-    "See hover text from ojects in world"
+    "See hover text from ojects in world",
+    "See collar's titler"
         ];
 
 
 string TURNON = "Allow";
 string TURNOFF = "Forbid";
+
+integer FLOATLINK; // hover text link number
 
 key kMenuID;
 
@@ -100,7 +105,8 @@ key g_kWearer;
 string GetScriptID()
 {
     // strip away "OpenCollar - " leaving the script's individual name
-    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
 string PeelToken(string in, integer slot)
 {
@@ -195,7 +201,9 @@ UpdateSettings()
         {
             sTempRLVSetting=llList2String(g_lSettings, n);
             sTempRLVValue=llList2String(g_lSettings, n + 1);
-            lNewList += [ sTempRLVSetting+ "=" + sTempRLVValue];
+            string sLinkKey;
+            if (sTempRLVSetting == "showhovertext") sLinkKey = ":" + (string)llGetLinkKey(FLOATLINK);
+            lNewList += [ sTempRLVSetting + sLinkKey + "=" + sTempRLVValue];
             if (sTempRLVValue!="y")
             {
                 lTempSettings+=[sTempRLVSetting,sTempRLVValue];
@@ -235,15 +243,6 @@ key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integ
 
 integer UserCommand(integer iNum, string sStr, key kID)
 {
-/* //no more needed -- SA: really?
-    else if ((sStr == "reset" || sStr == "runaway") && (iNum == COMMAND_OWNER || iNum == COMMAND_WEARER))
-    {
-        //clear db, reset script
-        llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
-        llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sExToken, NULL_KEY);
-        llResetScript();
-    }
-*/
     if (iNum < COMMAND_OWNER || iNum > COMMAND_WEARER) return FALSE;
     //added for chat command for direct menu acceess
     if (llToLower(sStr) == llToLower(g_sSubMenu) || sStr == "menu " + g_sSubMenu)
@@ -272,7 +271,6 @@ integer UserCommand(integer iNum, string sStr, key kID)
                 Notify(g_kWearer,"Sorry, but RLV commands may only be given by owner, secowner, or group (if set).",FALSE);
                 return TRUE;
             }
-
             string sOption = llList2String(llParseString2List(sThisItem, ["="], []), 0);
             string sParam = llList2String(llParseString2List(sThisItem, ["="], []), 1);
             integer iIndex = llListFindList(g_lSettings, [sOption]);
@@ -306,6 +304,16 @@ default
 
     state_entry()
     {
+        integer i = 1;
+        integer c = llGetNumberOfPrims();
+        for (; i < c; i++)
+        {
+            if (llSubStringIndex(llList2String(llGetLinkPrimitiveParams(i, [PRIM_DESC]), 0), "FloatText") == 0)
+                {
+                    FLOATLINK = i;
+                    i = c;
+                }
+        }
         g_kWearer = llGetOwner();
         // llSleep(1.0);
         // llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, NULL_KEY);

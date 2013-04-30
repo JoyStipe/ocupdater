@@ -43,13 +43,18 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
         if (iAlsoNotifyWearer) llOwnerSay(sMsg);
     }
 }
-
 string GetScriptID()
 {
     // strip away "OpenCollar - " leaving the script's individual name
-    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
-
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
+}
 list FindAvis(string in, list ex)
 {
     list out = llGetAgentList(AGENT_LIST_REGION, []);

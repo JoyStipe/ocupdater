@@ -33,7 +33,7 @@ string UNTICKED = "( )";
 
 string APPLOCK = "Lock Appearance";
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "Appearance_Lock";
+string g_sAppLockToken = "AppearanceLock";
 
 //MESSAGE MAP
 integer COMMAND_NOAUTH = 0;
@@ -73,7 +73,7 @@ integer DIALOG = -9000;
 integer DIALOG_RESPONSE = -9001;
 integer DIALOG_TIMEOUT = -9002;
 
-//string UPMENU = "↑";//when your menu hears this, give the parent menu
+//string UPMENU = "?";//when your menu hears this, give the parent menu
 string UPMENU = "^";
 
 key g_kWearer;
@@ -104,7 +104,8 @@ Debug(string sStr)
 string GetScriptID()
 {
     // strip away "OpenCollar - " leaving the script's individual name
-    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
 string PeelToken(string in, integer slot)
 {

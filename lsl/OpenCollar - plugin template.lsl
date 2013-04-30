@@ -190,15 +190,32 @@ DoMenu(key keyID, integer iAuth) {
 //===============================================================================
 //= parameters   :    none
 //=
-//= return        :   string     DB prefix from the description of the collar
+//= return        :   string prefix to be used for this script's settings
 //=
-//= description  :    prefix from the description of the collar
+//= description  :   portion of the name of the script following "OpenCollar - "
 //=
 //===============================================================================
 
-string GetDBPrefix() {
-    // get settings store prefix from list in object desc
-    return llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 2);
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
+}
+//===============================================================================
+//= parameters   :    in: 2-part string separated by an undescore (_)
+//=					slot: position of string to return, 0=left; 1=right
+//=
+//= return        :   requested sub-string
+//=
+//= description  :   Settings tokens are in form: ScriptID_Token
+//=
+//===============================================================================
+string PeelToken(string in, integer slot)
+{
+    integer i = llSubStringIndex(in, "_");
+    if (!slot) return llGetSubString(in, 0, i);
+    return llGetSubString(in, i + 1, -1);
 }
 
 //===============================================================================
@@ -238,10 +255,10 @@ integer UserCommand(integer iNum, string sStr, key kID) {
         Debug("Do some fancy stuff to impress the user");
 
         // maybe save a value to the setting store:
-        llMessageLinked(LINK_THIS, LM_SETTING_SAVE, "token=value", NULL_KEY);
+        llMessageLinked(LINK_THIS, LM_SETTING_SAVE, GetScriptID() + "token=value", NULL_KEY);
 
         // or delete a toke from the setting store:
-        llMessageLinked(LINK_THIS, LM_SETTING_DELETE, "token", NULL_KEY);                
+        llMessageLinked(LINK_THIS, LM_SETTING_DELETE, GetScriptID() + "token", NULL_KEY);                
     }
     return TRUE;
 }
@@ -290,7 +307,8 @@ default {
                 }
             }
         }
-        else if (iNum == LM_SETTING_RESPONSE) {
+        else if (iNum == LM_SETTING_RESPONSE)
+        {
             // response from setting store have been received
             // pares the answer
             list lParams = llParseString2List(sStr, ["="], []);
@@ -298,19 +316,25 @@ default {
             string sValue = llList2String(lParams, 1);
             // and check if any values for use are received
             // replace "value1" by your own token
-            
-            if (sToken == "value1" ) {
-                // work with the received values
-            }
-            // replace "value2" by your own token, but if possible try to store everything in one token
-            // to reduce the load on the setting store (especially if it is implemented as a webservice... )
-            else if (sToken == "value2") {
-                // work with the received values
-            }
-            // or check for specific values from the collar like "owner" (for owners) "secowners" (or secondary owners) etc
-            else if (sToken == "owner") {
-                // work with the received values, in this case pare the vlaue into a strided list with the owners
-                list lOwners = llParseString2List(sValue, [","], []);
+            if (PeelToken(sToken, 0) == GetScriptID()) // this setting is meant for this script
+            {
+            	sToken = PeelToken(sToken, 1); // discard the scriptID from the string
+            	if (sToken == "value1" )
+            	{
+    	            // work with the received values
+        	    }
+            	// replace "value2" by your own token, but if possible try to store everything in one token
+            	// to reduce the load on the setting store (especially if it is implemented as a webservice... )
+	            else if (sToken == "value2")
+	            {
+    	            // work with the received values
+        	    }
+			}
+            // or check for specific values from the collar like "auth_owner" (for owners) "auth_secowner" (for secondary owners) etc
+ 	        else if (sToken == "auth_owner")
+ 	        {
+    	        // work with the received values, in this case pare the vlaue into a strided list with the owners
+        	    list lOwners = llParseString2List(sValue, [","], []);
             }
         }
         else if (UserCommand(iNum, sStr, kID)) {

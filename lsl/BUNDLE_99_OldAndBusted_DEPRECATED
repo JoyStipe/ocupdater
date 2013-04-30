@@ -1,6 +1,8 @@
 SCRIPT|OpenCollar - remoteserver
 SCRIPT|OpenCollar - anim/pose
 SCRIPT|OpenCollar - cmdupdate
+SCRIPT|OpenCollar - techlabel
+SCRIPT|OpenCollar - BMC
 ITEM|brushedmetal-hshaded-contrasty
 ITEM|brushedmetal-hshaded
 ITEM|brushedmetal-roundshaded

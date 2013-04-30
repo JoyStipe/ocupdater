@@ -1,4 +1,4 @@
-//OpenCollar - rlvfolders
+﻿//OpenCollar - rlvfolders
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 
 string g_sParentMenu = "Un/Dress";
@@ -113,7 +113,8 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 string GetScriptID()
 {
     // strip away "OpenCollar - " leaving the script's individual name
-    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
 string PeelToken(string in, integer slot)
 {

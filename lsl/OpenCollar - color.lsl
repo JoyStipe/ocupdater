@@ -97,7 +97,7 @@ list g_lMenuIDs;
 key g_kTouchID;
 
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "Appearance_Lock";
+string g_sAppLockToken = "AppearanceLock";
 
 //MESSAGE MAP
 //integer COMMAND_NOAUTH = 0;
@@ -139,7 +139,8 @@ key g_kWearer;
 string GetScriptID()
 {
     // strip away "OpenCollar - " leaving the script's individual name
-    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
 string PeelToken(string in, integer slot)
 {

@@ -157,7 +157,8 @@ debug(string sText)
 string GetScriptID()
 {
     // strip away "OpenCollar - " leaving the script's individual name
-    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
 string PeelToken(string in, integer slot)
 {
@@ -306,13 +307,20 @@ string Vec2String(vector vVec)
     {
         string sStr = llList2String(lParts, g_iLoop);
         //remove any trailing 0's or .'s from sStr
-        while ((~(integer)llSubStringIndex(sStr, ".")) && (llGetSubString(sStr, -1, -1) == "0" || llGetSubString(sStr, -1, -1) == "."))
+        //while ((~(integer)llSubStringIndex(sStr, ".")) && (llGetSubString(sStr, -1, -1) == "0" || llGetSubString(sStr, -1, -1) == "."))
+        while (~llSubStringIndex(sStr, ".") && (llGetSubString(sStr, -1, -1) == "0" || llGetSubString(sStr, -1, -1) == "."))
         {
             sStr = llGetSubString(sStr, 0, -2);
         }
         lParts = llListReplaceList(lParts, [sStr], g_iLoop, g_iLoop);
     }
     return "<" + llDumpList2String(lParts, ",") + ">";
+}
+string Float2String(float in)
+{
+    string out = (string)in;
+    while (~llSubStringIndex(out, ".") && (llGetSubString(out, -1, -1) == "0" || llGetSubString(out, -1, -1) == ".")) out = llGetSubString(out, 0, -2);
+    return out;
 }
 
 SaveSettings(string sToken, string sSave, integer bSaveToLocal)
@@ -388,10 +396,10 @@ integer KeyIsAv(key id)
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
-    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" 
+    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|"
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
     return kID;
-} 
+}
 
 OptionsMenu(key kIn, integer iAuth)
 {
@@ -414,7 +422,8 @@ DensityMenu(key kIn, integer iAuth)
 {
     list lButtons = ["Default", "+", "-"];
     g_sCurrentMenu = L_DENSITY;
-    string sPrompt = "Choose '+' for more and '-' for less particles\n'Default' to revert to the default\n";
+    string sPrompt = "Choose '+' for more and '-' for less particles\n'Default' to revert to the default\nCurrent Density = ";
+    sPrompt += Float2String(-g_fBurstRate);// BurstRate is opposite the implied effect of density
     g_kDialogID = Dialog(kIn, sPrompt, lButtons, [UPMENU], 0, iAuth);
 }
 
@@ -423,8 +432,7 @@ GravityMenu(key kIn, integer iAuth)
     list lButtons = ["Default", "+", "-", "noGravity"];
     g_sCurrentMenu = L_GRAVITY;
     string sPrompt = "Choose '+' for more and '-' for less leash-gravity\n'Default' to revert to the default\nCurrent Gravity = ";
-    string sCurrentGravity = llGetSubString((string)g_vLeashGravity.z, 1, 3);
-    sPrompt += sCurrentGravity + "\nDefault: 1.0";
+    sPrompt += Float2String(g_vLeashGravity.z) + "\nDefault: 1.0";
     g_kDialogID = Dialog(kIn, sPrompt, lButtons, [UPMENU], 0, iAuth);
 }
 
@@ -433,8 +441,7 @@ SizeMenu(key kIn, integer iAuth)
     list lButtons = ["Default", "+", "-", "minimum"];
     g_sCurrentMenu = L_SIZE;
     string sPrompt = "Choose '+' for bigger and '-' for smaller size of the leash texture\n'Default' to revert to the default\n'minium' for the smallest possible\nCurrent Size = ";
-    string sCurrentSize = llGetSubString((string)g_vLeashSize.x, 0, 3);
-    sPrompt += sCurrentSize + "\nDefault: 0.07 (0.03 steps)";
+    sPrompt += Float2String(g_vLeashSize.x) + "\nDefault: 0.07 (0.03 steps)";
     g_kDialogID = Dialog(kIn, sPrompt, lButtons, [UPMENU], 0, iAuth);
 }
 
@@ -737,7 +744,7 @@ default
                     {
                         StartParticles(g_kParticleTarget);
                     }
-                    SaveSettings(L_DENSITY, (string)g_fBurstRate, TRUE);
+                    SaveSettings(L_DENSITY, Float2String(g_fBurstRate), TRUE);
                     DensityMenu(kAv, iAuth);
                 }
                 else if (g_sCurrentMenu == L_GRAVITY)
@@ -766,7 +773,7 @@ default
                     {
                         StartParticles(g_kParticleTarget);
                     }
-                    SaveSettings(L_GRAVITY, (string)g_vLeashGravity.z, TRUE);
+                    SaveSettings(L_GRAVITY, Float2String(g_vLeashGravity.z), TRUE);
                     GravityMenu(kAv, iAuth);
                 }
                 else if (g_sCurrentMenu == L_SIZE)
@@ -800,7 +807,7 @@ default
                     {
                         StartParticles(g_kParticleTarget);
                     }
-                    SaveSettings(L_SIZE, (string)g_vLeashSize.x, TRUE);
+                    SaveSettings(L_SIZE, Float2String(g_vLeashSize.x), TRUE);
                     SizeMenu(kAv, iAuth);
                 }
             }
@@ -831,15 +838,14 @@ default
                 else if (sToken == "Gravity")
                 {
                     g_vLeashGravity.z = (float)sValue;
-                    SaveSettings(L_GRAVITY, (string)g_vLeashGravity, FALSE);
-                    sValue = (string)g_vLeashGravity; // for default list save
+                    sValue = Vec2String(g_vLeashGravity);
+                    SaveSettings(L_GRAVITY, sValue, FALSE);
                 }
                 else if (sToken == "Size")
                 {
-                    g_vLeashSize.x = (float)sValue;
-                    g_vLeashSize.y = (float)sValue;
+                    g_vLeashSize.x = g_vLeashSize.y = (float)sValue;
                     SaveSettings(L_SIZE, sValue, FALSE);
-                    sValue = (string)g_vLeashSize;
+                    sValue = Vec2String(g_vLeashSize);
                 }
                 else if (sToken == "Color")
                 {

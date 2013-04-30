@@ -110,7 +110,8 @@ DoMenu(key keyID, integer iAuth)
 string GetScriptID()
 {
     // strip away "OpenCollar - " leaving the script's individual name
-    return llGetSubString(llGetScriptName(), 13, -1) + "_";
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
 // Get Group or Token, 0=Group, 1=Token
 string PeelToken(string in, integer slot)
@@ -326,6 +327,8 @@ default
 {
     state_entry()
     {
+    	// Ensure that settings resets AFTER every other script, so that they don't reset after tehy get settings
+    	llSleep(0.5);
         g_kWearer = llGetOwner();
         defaultsline = 0;
         defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
@@ -345,7 +348,7 @@ default
         if (g_kWearer == llGetOwner())
         {
             llSleep(0.5); // brief wait for others to reset
-            Refresh();        
+            Refresh();
         }
         else llResetScript();
     }
@@ -418,7 +421,7 @@ default
             if (SettingExists(sStr))
             {
                 llMessageLinked(LINK_SET, LM_SETTING_RESPONSE, sStr + "=" + GetSetting(sStr), NULL_KEY);
-            } 
+            }
             else
             {
                 llMessageLinked(LINK_SET, LM_SETTING_EMPTY, sStr, NULL_KEY);
