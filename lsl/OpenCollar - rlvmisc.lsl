@@ -58,7 +58,7 @@ integer FLOATLINK; // hover text link number
 
 key kMenuID;
 
-integer g_iRLVOn=FALSE; // make sure the rlv only gets activated 
+integer g_iRLVOn=FALSE; // make sure the rlv only gets activated
 
 //MESSAGE MAP
 //integer COMMAND_NOAUTH = 0;
@@ -101,6 +101,11 @@ string UPMENU = "^";
 //string MORE = ">";
 
 key g_kWearer;
+
+Debug(string in)
+{
+    //llOwnerSay(in);
+}
 
 string GetScriptID()
 {
@@ -204,6 +209,7 @@ UpdateSettings()
             string sLinkKey;
             if (sTempRLVSetting == "showhovertext") sLinkKey = ":" + (string)llGetLinkKey(FLOATLINK);
             lNewList += [ sTempRLVSetting + sLinkKey + "=" + sTempRLVValue];
+            Debug(llList2String(lNewList, -1));
             if (sTempRLVValue!="y")
             {
                 lTempSettings+=[sTempRLVSetting,sTempRLVValue];
@@ -236,10 +242,10 @@ ClearSettings()
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
-    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" 
+    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|"
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
     return kID;
-} 
+}
 
 integer UserCommand(integer iNum, string sStr, key kID)
 {
@@ -306,20 +312,20 @@ default
     {
         integer i = 1;
         integer c = llGetNumberOfPrims();
-        for (; i < c; i++)
+        for (; i <= c; i++)
         {
             if (llSubStringIndex(llList2String(llGetLinkPrimitiveParams(i, [PRIM_DESC]), 0), "FloatText") == 0)
-                {
-                    FLOATLINK = i;
-                    i = c;
-                }
+            {
+                FLOATLINK = i;
+                i = c;
+            }
         }
         g_kWearer = llGetOwner();
         // llSleep(1.0);
         // llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, NULL_KEY);
         //llMessageLinked(LINK_SET, LM_SETTING_REQUEST, g_sDBToken, NULL_KEY);
     }
-    
+
     link_message(integer iSender, integer iNum, string sStr, key kID)
     {
         if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu)
@@ -364,10 +370,10 @@ default
             if (kID == kMenuID)
             {
                 list lMenuParams = llParseString2List(sStr, ["|"], []);
-                key kAv = (key)llList2String(lMenuParams, 0);          
-                string sMessage = llList2String(lMenuParams, 1);                                         
-                integer iPage = (integer)llList2String(lMenuParams, 2);                
-                integer iAuth = (integer)llList2String(lMenuParams, 3);                
+                key kAv = (key)llList2String(lMenuParams, 0);
+                string sMessage = llList2String(lMenuParams, 1);
+                integer iPage = (integer)llList2String(lMenuParams, 2);
+                integer iAuth = (integer)llList2String(lMenuParams, 3);
                 if (sMessage == UPMENU)
                 {
                     llMessageLinked(LINK_SET, iAuth, "menu " + g_sParentMenu, kAv);
@@ -392,7 +398,7 @@ default
                         {
                             ONOFF = "y";
                         }
-        
+
                         //loop through rlvcmds to create list
                         string sOut;
                         integer n;
