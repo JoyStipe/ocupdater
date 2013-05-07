@@ -59,10 +59,9 @@ list g_lMenus;//11-strided list in form listenChan, dialogid, listener, starttim
 list g_lRemoteMenus;
 
 integer g_iStrideLength = 11;
+
 // List of user keys who opt-out of chat-spammage, ie chose "off"
 list MRSBUN = []; // blatant monty python reference - list of those who do not like spam
-// these two variables are for user-switch of menu-to-chat reflux
-integer CHATSPAM = TRUE; // default behavior
 string SPAMSWITCH = "verbose"; // lowercase chat-command token
 
 key g_kWearer;
@@ -153,7 +152,6 @@ Notify(key keyID, string sMsg, integer nAlsoNotifyWearer)
 integer ButtonDigits(list lIn)
 // checks if any of the times is over 20 characters and deduces how many digits are needed
 {
-    if (!CHATSPAM) return 0; // no numbers needed since we won't spill to chat
     integer m=llGetListLength(lIn);
     integer iDigits;
     if ( m < 10 ) iDigits = 1;
@@ -183,7 +181,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     integer iNumitems = llGetListLength(lMenuItems);
     integer iStart;
     integer iMyPageSize = iPagesize - llGetListLength(lUtilityButtons);
-        
+
     //slice the menuitems by page
     if (iNumitems > iMyPageSize)
     {
@@ -206,7 +204,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     }
     else if (iNumitems > iMyPageSize) lButtons = llList2List(lMenuItems, iStart, iEnd);
     else lButtons = lMenuItems;
-    
+
     // check promt lenghtes
     integer iPromptlen=GetStringBytes(sPrompt);
     if (iPromptlen>511)
@@ -223,7 +221,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     {
         sThisPrompt= sPrompt;
     }
-    
+
     //integer stop = llGetListLength(lCurrentItems);
     //integer n;
     //for (n = 0; n < stop; n++)
@@ -231,7 +229,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     // string sName = llList2String(lMenuItems, iStart + n);
     // lButtons += [sName];
     //}
-    
+
 
     // SA: not needed in this script since we actually build lButtons and lUtilityButtons here
     // both are made from parsing a string. Thus the result is necessarily a list of strings
@@ -239,7 +237,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     // empty string.
     // lButtons = SanitizeButtons()lButtons);
     // lUtilityButtons = SanitizeButtons(lUtilityButtons);
-    
+
     integer iChan = RandomUniqueChannel();
     integer iListener = llListen(iChan, "", kRecipient, "");
     llSetTimerEvent(g_iReapeat);
@@ -270,7 +268,7 @@ list PrettyButtons(list lOptions, list lUtilityButtons, list iPagebuttons)
     {
         lCombined = llDeleteSubList(lCombined, u, u);
     }
-    
+
     list lOut = llList2List(lCombined, 9, 11);
     lOut += llList2List(lCombined, 6, 8);
     lOut += llList2List(lCombined, 3, 5);
@@ -325,7 +323,7 @@ ClearUser(key kRCPT)
     while (~iIndex)
     {
         Debug("removed stride for " + (string)kRCPT);
-    g_lMenus = RemoveMenuStride(g_lMenus, iIndex -4);
+        g_lMenus = RemoveMenuStride(g_lMenus, iIndex -4);
         //g_lMenus = llDeleteSubList(g_lMenus, iIndex - 4, iIndex - 5 + g_iStrideLength);
         iIndex = llListFindList(g_lMenus, [kRCPT]);
     }
@@ -356,8 +354,13 @@ integer UserCommand(integer iNum, string sStr, key kID)
         {
             if (~i) return TRUE; // already in list
             MRSBUN += [kID];
+            Notify(kID, "Verbose Feature activated for you.", FALSE);
         }
-        else if (~i) MRSBUN = llDeleteSubList(MRSBUN, i, i);
+        else if (~i)
+        {
+            MRSBUN = llDeleteSubList(MRSBUN, i, i);
+            Notify(kID, "Verbose Feature de-activated for you.", FALSE);
+        }
         else return TRUE; // not in list to start with
         if (!llGetListLength(MRSBUN)) llMessageLinked(LINK_THIS, LM_SETTING_DELETE, GetScriptID() + SPAMSWITCH, NULL_KEY);
         else llMessageLinked(LINK_THIS, LM_SETTING_SAVE, GetScriptID() + SPAMSWITCH + "=" + llList2CSV(MRSBUN), NULL_KEY);
@@ -403,7 +406,8 @@ default
             integer iPage = (integer)llList2String(lParams, 2);
             // SA: why should we keep nulls? Discarding them now saves us the use of SanitizeButtons()
             list lButtons = llParseString2List(llList2String(lParams, 3), ["`"], []);
-            integer iDigits = ButtonDigits(lButtons);
+            integer iDigits;
+            if (!~llListFindList(MRSBUN, [kRCPT])) iDigits = ButtonDigits(lButtons);
             list ubuttons = llParseString2List(llList2String(lParams, 4), ["`"], []);
             integer iAuth = COMMAND_NOAUTH;
             if (llGetListLength(lParams)>=6) iAuth = llList2Integer(lParams, 5);
@@ -483,7 +487,7 @@ default
             if (sToken == GetScriptID() + SPAMSWITCH) MRSBUN = llParseString2List(sValue, [","], []);
         }
     }
-    
+
     listen(integer iChan, string sName, key kID, string sMessage)
     {
         integer iMenuIndex = llListFindList(g_lMenus, [iChan]);
@@ -499,7 +503,7 @@ default
             integer iDigits = llList2Integer(g_lMenus, iMenuIndex + 9);
             integer iAuth = llList2Integer(g_lMenus, iMenuIndex + 10);
             g_lMenus = RemoveMenuStride(g_lMenus, iMenuIndex);
-                   
+
             if (sMessage == MORE)
             {
                 Debug((string)iPage);
@@ -527,7 +531,7 @@ default
                 Dialog(kID, sPrompt, items, ubuttons, iPage, kMenuID, iDigits, iAuth);
             }
             else if (sMessage == BLANK)
-            
+
             {
                 //give the same menu back
                 Dialog(kID, sPrompt, items, ubuttons, iPage, kMenuID, iDigits, iAuth);
@@ -546,13 +550,13 @@ default
             }
         }
     }
-    
+
     timer()
     {
         CleanList();
-        
+
         //if list is empty after that, then stop timer
-        
+
         if (!llGetListLength(g_lMenus))
         {
             Debug("no active dialogs, stopping timer");
