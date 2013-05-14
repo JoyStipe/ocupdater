@@ -1,4 +1,4 @@
-// OpenCollar - keyholder plugin
+﻿// OpenCollar - keyholder plugin
 // 
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //
@@ -63,7 +63,7 @@ integer g_iKeyHolderChannel = -0x3FFF0502;
 // key;return;reason
 
 // State stuff
-key g_keyWearer; // key of the current wearer to reset only on owner changes
+key g_kWearer; // key of the current wearer to reset only on owner changes
 
 // menu handlers
 key g_keyMenuID; // For saving the key of the last dialog we sent
@@ -142,7 +142,7 @@ integer TIMER_EVENT = -10000; // str = "start" or "end". For start, either "onli
 //===============================================================================
 integer nGetOwnerChannel(integer nOffset)
 {
-    integer chan = (integer)("0x"+llGetSubString((string)g_keyWearer,3,8)) + g_nCmdChannelOffset;
+    integer chan = (integer)("0x"+llGetSubString((string)g_kWearer,3,8)) + g_nCmdChannelOffset;
     if (chan>0)
     {
         chan=chan*(-1);
@@ -213,19 +213,36 @@ string strReplace(string str, string search, string replace) {
 //= return        :    none
 //= description  :    notify targeted id and maybe the wearer
 //===============================================================================
-Notify(key kID, string msg, integer alsoNotifyWearer)
+integer GetOwnerChannel(key kOwner, integer iOffset)
 {
-    if (kID == g_keyWearer)
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
     {
-        llOwnerSay(msg);
+        iChan=iChan*(-1);
     }
-    else
+    if (iChan > -10000)
     {
-        llInstantMessage(kID,msg);
-        if (alsoNotifyWearer)
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
+    {
+        llOwnerSay(sMsg);
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
         {
-            llOwnerSay(msg);
+            llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -393,7 +410,7 @@ TakeKey(key avatar, integer auth, integer remote)
     
     if (!remote && kh_range > 0.0 && llVecDist(llList2Vector(llGetObjectDetails(avatar, [OBJECT_POS]),0),llGetPos()) > kh_range)
     {
-        Notify(avatar, "You are too far away to take " + llKey2Name(g_keyWearer) + "'s key, you will have to move closer.", FALSE);
+        Notify(avatar, "You are too far away to take " + llKey2Name(g_kWearer) + "'s key, you will have to move closer.", FALSE);
         return;
     }
 
@@ -412,7 +429,7 @@ TakeKey(key avatar, integer auth, integer remote)
     if (kh_lock_collar && !oc_locked)
         llMessageLinked(LINK_THIS, COMMAND_OWNER, "lock", avatar);
     
-    if (avatar != g_keyWearer) llMessageLinked(LINK_THIS, WEARERLOCKOUT, "on", "");
+    if (avatar != g_kWearer) llMessageLinked(LINK_THIS, WEARERLOCKOUT, "on", "");
     
     if (kh_auto_return_timer && kh_auto_return_time)
     {
@@ -426,8 +443,8 @@ TakeKey(key avatar, integer auth, integer remote)
         llMessageLinked(LINK_THIS, COMMAND_OWNER, "timer start", NULL_KEY);
     }
     
-    Notify(avatar, "You take " + llKey2Name(g_keyWearer) + "'s key!", FALSE);
-    Notify(g_keyWearer, "Your key has been taken by " + llKey2Name(avatar) + "!", TRUE);
+    Notify(avatar, "You take " + llKey2Name(g_kWearer) + "'s key!", FALSE);
+    Notify(g_kWearer, "Your key has been taken by " + llKey2Name(avatar) + "!", TRUE);
 
     if (!remote && g_iGlobalKey)
         llWhisper(g_iKeyHolderChannel, llDumpList2String([
@@ -469,8 +486,8 @@ ReturnKey(string reason, integer remote)
         llMessageLinked(LINK_THIS, COMMAND_OWNER, "timer stop", NULL_KEY);
     }
             
-    Notify(avatar, llKey2Name(g_keyWearer) + "'s key is returned. " + reason, FALSE);
-    Notify(g_keyWearer, "Your key has been returned. " + reason, TRUE);
+    Notify(avatar, llKey2Name(g_kWearer) + "'s key is returned. " + reason, FALSE);
+    Notify(g_kWearer, "Your key has been returned. " + reason, TRUE);
     
     if (!remote && g_iGlobalKey)
         llWhisper(g_iKeyHolderChannel, llDumpList2String([
@@ -539,7 +556,7 @@ updateVisible()
     // Handle cuffs, if we are in Cuff mode.
     if (g_iOpenCuffMode)
     {
-        llRegionSay(g_nCmdChannel+1,"rlac|*|khShowKey=" + (string)show_key + "|" + (string)g_keyWearer);
+        llRegionSay(g_nCmdChannel+1,"rlac|*|khShowKey=" + (string)show_key + "|" + (string)g_kWearer);
     }
 }
 
@@ -613,7 +630,7 @@ integer UserCommand(integer num, string str, key id) // here iNum: auth value, s
 {
     if (num > COMMAND_EVERYONE || num < COMMAND_OWNER) return FALSE; // sanity check
     if (str == "menu " + g_szSubmenu) DoMenu(id, FALSE, num);
-    else if ((id == g_keyWearer || num == COMMAND_OWNER) && str == "resetscripts") llResetScript();
+    else if ((id == g_kWearer || num == COMMAND_OWNER) && str == "resetscripts") llResetScript();
     else if (num == COMMAND_OWNER) // owner only stuff here
     {
         if (str == "menu " + g_szKeyConfigMenu) DoMenuConfigure(id, num);
@@ -657,7 +674,7 @@ integer UserCommand(integer num, string str, key id) // here iNum: auth value, s
         {
             if (kh_lockout) return TRUE;
             kh_lockout = TRUE;
-            Notify(g_keyWearer, "You are now locked out until your key is taken and returned.", TRUE);
+            Notify(g_kWearer, "You are now locked out until your key is taken and returned.", TRUE);
             llMessageLinked(LINK_THIS, WEARERLOCKOUT, "on", "");
         }
         else if (str == "khsetmainmenu" || str == "khunsetmainmenu")
@@ -730,7 +747,7 @@ default
         // send request to main menu and ask other menus if they want to register with us
 //        llMessageLinked(LINK_THIS, MENUNAME_REQUEST, g_szSubmenu, NULL_KEY);
         llMessageLinked(LINK_THIS, MENUNAME_RESPONSE, g_szParentmenu + "|" + g_szSubmenu, NULL_KEY);
-        g_keyWearer=llGetOwner();
+        g_kWearer=llGetOwner();
         updateVisible();
         
         if (g_iOpenCuffMode) 
@@ -750,7 +767,7 @@ default
     // configuration in the script itself as global variables without having to query cached settings.
     on_rez(integer param)
     {
-        if (llGetOwner()!=g_keyWearer)
+        if (llGetOwner()!=g_kWearer)
             llResetScript();
         if ( kh_lockout || kh_key != NULL_KEY )
         {
@@ -778,8 +795,8 @@ default
             if (str == "menu" && ( kh_key != NULL_KEY || kh_lockout ) )
             {
                 if ( kh_key == NULL_KEY )
-                    Notify(g_keyWearer, "You are locked out of the " + g_sToyName + " until someone takes and returns your key.", TRUE);
-                else Notify(g_keyWearer, "You are locked out of the " + g_sToyName + " until your key is returned.", TRUE);
+                    Notify(g_kWearer, "You are locked out of the " + g_sToyName + " until someone takes and returns your key.", TRUE);
+                else Notify(g_kWearer, "You are locked out of the " + g_sToyName + " until your key is returned.", TRUE);
             }
         }
         else if (num == COMMAND_EVERYONE)
@@ -839,7 +856,7 @@ default
                 else if (message == "Lock Out")
                 {
                     UserCommand(iAuth, "khlockout", av);
-                    if (av != g_keyWearer)
+                    if (av != g_kWearer)
                         DoMenu(av, FALSE, iAuth);
                 }
                 else if (llGetListLength(llParseString2List(message, [":" ], [])) > 2)
@@ -916,7 +933,7 @@ default
         if (channel == g_iKeyHolderChannel)
         {
             if (!g_iGlobalKey) return; // don't care.
-            if (g_keyWearer != llGetOwnerKey(id)) return; // Not for us.
+            if (g_kWearer != llGetOwnerKey(id)) return; // Not for us.
             
             list lArgs = llParseString2List(message, [";"], []);
             

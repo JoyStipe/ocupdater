@@ -1,4 +1,4 @@
-//OpenCollar - dialog
+﻿//OpenCollar - dialog
 //an adaptation of Schmobag Hogfather's SchmoDialog script
 
 //MESSAGE MAP
@@ -131,20 +131,36 @@ string TruncateString(string sStr, integer iBytes)
     return llUnescapeURL(sOut);
 }
 
-Notify(key keyID, string sMsg, integer nAlsoNotifyWearer)
+integer GetOwnerChannel(key kOwner, integer iOffset)
 {
-    Debug((string)keyID);
-    if (keyID == g_kWearer)
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
     }
-    else
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
     {
-        llInstantMessage(keyID, sMsg);
-        if (nAlsoNotifyWearer)
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -181,7 +197,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     integer iNumitems = llGetListLength(lMenuItems);
     integer iStart;
     integer iMyPageSize = iPagesize - llGetListLength(lUtilityButtons);
-
+        
     //slice the menuitems by page
     if (iNumitems > iMyPageSize)
     {
@@ -204,7 +220,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     }
     else if (iNumitems > iMyPageSize) lButtons = llList2List(lMenuItems, iStart, iEnd);
     else lButtons = lMenuItems;
-
+    
     // check promt lenghtes
     integer iPromptlen=GetStringBytes(sPrompt);
     if (iPromptlen>511)
@@ -221,7 +237,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     {
         sThisPrompt= sPrompt;
     }
-
+    
     //integer stop = llGetListLength(lCurrentItems);
     //integer n;
     //for (n = 0; n < stop; n++)
@@ -229,7 +245,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     // string sName = llList2String(lMenuItems, iStart + n);
     // lButtons += [sName];
     //}
-
+    
 
     // SA: not needed in this script since we actually build lButtons and lUtilityButtons here
     // both are made from parsing a string. Thus the result is necessarily a list of strings
@@ -237,7 +253,7 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     // empty string.
     // lButtons = SanitizeButtons()lButtons);
     // lUtilityButtons = SanitizeButtons(lUtilityButtons);
-
+    
     integer iChan = RandomUniqueChannel();
     integer iListener = llListen(iChan, "", kRecipient, "");
     llSetTimerEvent(g_iReapeat);
@@ -268,7 +284,7 @@ list PrettyButtons(list lOptions, list lUtilityButtons, list iPagebuttons)
     {
         lCombined = llDeleteSubList(lCombined, u, u);
     }
-
+    
     list lOut = llList2List(lCombined, 9, 11);
     lOut += llList2List(lCombined, 6, 8);
     lOut += llList2List(lCombined, 3, 5);
@@ -388,7 +404,7 @@ default
             //str will be pipe-delimited list with rcpt|prompt|page|backtick-delimited-list-buttons|backtick-delimited-utility-buttons|auth
             Debug(sStr);
             list lParams = llParseStringKeepNulls(sStr, ["|"], []);
-            key kRCPT = (key)llList2String(lParams, 0);
+            key kRCPT = llGetOwnerKey((key)llList2String(lParams, 0));
             integer iIndex = llListFindList(g_lRemoteMenus, [kRCPT]);
             if (~iIndex)
             {
@@ -487,7 +503,7 @@ default
             if (sToken == GetScriptID() + SPAMSWITCH) MRSBUN = llParseString2List(sValue, [","], []);
         }
     }
-
+    
     listen(integer iChan, string sName, key kID, string sMessage)
     {
         integer iMenuIndex = llListFindList(g_lMenus, [iChan]);
@@ -503,7 +519,7 @@ default
             integer iDigits = llList2Integer(g_lMenus, iMenuIndex + 9);
             integer iAuth = llList2Integer(g_lMenus, iMenuIndex + 10);
             g_lMenus = RemoveMenuStride(g_lMenus, iMenuIndex);
-
+                   
             if (sMessage == MORE)
             {
                 Debug((string)iPage);
@@ -531,7 +547,7 @@ default
                 Dialog(kID, sPrompt, items, ubuttons, iPage, kMenuID, iDigits, iAuth);
             }
             else if (sMessage == BLANK)
-
+            
             {
                 //give the same menu back
                 Dialog(kID, sPrompt, items, ubuttons, iPage, kMenuID, iDigits, iAuth);
@@ -550,13 +566,13 @@ default
             }
         }
     }
-
+    
     timer()
     {
         CleanList();
-
+        
         //if list is empty after that, then stop timer
-
+        
         if (!llGetListLength(g_lMenus))
         {
             Debug("no active dialogs, stopping timer");

@@ -1,4 +1,4 @@
-//OpenCollar - settings
+﻿//OpenCollar - settings
 // This script stores settings for other scripts in the collar.  In bygone days
 // it was responsible for storing them to an online database too.  It doesn't
 // do that anymore.  But so long as plugin scripts are still using central
@@ -72,13 +72,36 @@ Debug (string str)
     //llOwnerSay(llGetScriptName() + ": " + str);
 }
 
-Notify(key id, string sMsg, integer iAlsoNotifyWearer)
+integer GetOwnerChannel(key kOwner, integer iOffset)
 {
-    if (id == g_kWearer) llOwnerSay(sMsg);
-    else
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
     {
-        llInstantMessage(id,sMsg);
-        if (iAlsoNotifyWearer) llOwnerSay(sMsg);
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
+    {
+        llOwnerSay(sMsg);
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
+        {
+            llOwnerSay(sMsg);
+        }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
@@ -327,8 +350,8 @@ default
 {
     state_entry()
     {
-    	// Ensure that settings resets AFTER every other script, so that they don't reset after tehy get settings
-    	llSleep(0.5);
+        // Ensure that settings resets AFTER every other script, so that they don't reset after tehy get settings
+        llSleep(0.5);
         g_kWearer = llGetOwner();
         defaultsline = 0;
         defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
@@ -348,7 +371,7 @@ default
         if (g_kWearer == llGetOwner())
         {
             llSleep(0.5); // brief wait for others to reset
-            Refresh();
+            Refresh();        
         }
         else llResetScript();
     }
@@ -421,7 +444,7 @@ default
             if (SettingExists(sStr))
             {
                 llMessageLinked(LINK_SET, LM_SETTING_RESPONSE, sStr + "=" + GetSetting(sStr), NULL_KEY);
-            }
+            } 
             else
             {
                 llMessageLinked(LINK_SET, LM_SETTING_EMPTY, sStr, NULL_KEY);

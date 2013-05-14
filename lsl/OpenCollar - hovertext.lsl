@@ -1,4 +1,4 @@
-//OpenCollar - hovertext
+﻿//OpenCollar - hovertext
 
 string g_sParentMenu = "AddOns";
 string g_sFeatureName = "FloatText";
@@ -42,14 +42,36 @@ Debug(string sMsg) {
     //llOwnerSay(llGetScriptName() + " (debug): " + sMsg);
 }
 
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
-    if (kID == g_kWearer) {
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
+    {
         llOwnerSay(sMsg);
-    } else {
-            llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) {
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
+        {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -185,7 +207,7 @@ default {
                     g_iLastRank = iNum;
                     ShowText(g_sText);
                 }
-            } else if (sStr == "runaway" && iNum == COMMAND_OWNER) {
+            } else if (sStr == "runaway" && (iNum == COMMAND_OWNER || iNum == COMMAND_WEARER)) {
                 g_sText = "";
                 HideText();
                 llResetScript();

@@ -1,4 +1,4 @@
-//OpenCollar - subspy
+﻿//OpenCollar - subspy
 //put all reporting on an interval of 30 or 60 secs.  That way we won't get behind with IM delays.
 //use sensorrepeat as a second timer to do the reporting (since regular timer is already used by menu system
 //if radar is turned off, just don't report avs when the sensor or no_sensor event goes off
@@ -318,18 +318,36 @@ DialogRadarSettings(key kID, integer iAuth)
     g_kDialogRadarSettingsID = Dialog(kID, sPromt, lButtons, [UPMENU], 0, iAuth);
 }
 
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
-    Debug("notify " + (string)kID + " " + sMsg);
     if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
-    } else {
-            llInstantMessage(kID,sMsg);
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
+        llInstantMessage(kID,sMsg);
         if (iAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 

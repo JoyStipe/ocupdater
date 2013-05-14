@@ -1,4 +1,4 @@
-//OpenCollar - badwords
+﻿//OpenCollar - badwords
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //if list isn't blank, open listener on channel 0, with sub's key <== only for the first badword???
 
@@ -207,14 +207,36 @@ string right(string sSrc, string sDivider) {
     return sSrc;
 }
 
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
-    if (kID == g_kWearer) {
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
+    {
         llOwnerSay(sMsg);
-    } else {
-            llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) {
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
+        {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -493,5 +515,4 @@ default
             }
         }
     }
-
 }

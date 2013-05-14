@@ -1,4 +1,4 @@
-//OpenCollar - bell
+﻿//OpenCollar - bell
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //Collar Cuff Menu
 
@@ -132,23 +132,38 @@ string AutoPrefix()
     return llToLower(llGetSubString(llList2String(sName, 0), 0, 0)) + llToLower(llGetSubString(llList2String(sName, 1), 0, 0));
 }
 
-Notify(key kID, string sMsg, integer nAlsoNotifyWearer)
+integer GetOwnerChannel(key kOwner, integer iOffset)
 {
-    Debug((string)kID);
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
     if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
     }
-    else
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
     {
         llInstantMessage(kID,sMsg);
-        if (nAlsoNotifyWearer)
+        if (iAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
         }
     }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
+    }
 }
-
 Debug(string sMsg)
 {
     if (g_iDebugging)

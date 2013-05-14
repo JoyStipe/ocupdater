@@ -1,4 +1,4 @@
-//OpenCollar - cleanup
+﻿//OpenCollar - cleanup
 // This script exists to clean up some legacy cruft in old collars:
   // - delete the hovertext script that is in a child prim
   // - delete the mis-named "OpenCollar - remoteserver- 3.481" script (missing a space in the name pattern)
@@ -90,4 +90,3 @@ default
         llRemoveInventory(llGetScriptName());
     }
 }
-

@@ -1,4 +1,5 @@
-//OpenCollar - rlvmain
+﻿//OpenCollar - rlvmain
+
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //new viewer checking method, as of 2.73
 //on rez, restart script
@@ -84,15 +85,36 @@ Debug(string sStr)
 {
     //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
-
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
-    if (kID == g_kWearer) {
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
+    {
         llOwnerSay(sMsg);
-    } else {
-            llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) {
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
+        {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 string GetScriptID()
@@ -138,7 +160,7 @@ DoMenu(key kID, integer iAuth)
     }
 
     string sPrompt = "Restrained Love Viewer Options.";
-    if (g_iRlvVersion) sPrompt += "\nDetected version of RLV API: "+(string)g_iRlvVersion;
+    if (g_iRlvVersion) sPrompt += "\nDetected version of RLVÂ API: "+(string)g_iRlvVersion;
     kMenuID = Dialog(kID, sPrompt, lButtons, [UPMENU], 0, iAuth);
 }
 
@@ -222,11 +244,11 @@ AddRestriction(key kID, string sBehav)
     }
     else
     {
-        list lSrcRestr = llParseString2List(llList2String(g_lRestrictions,iSource),["/"],[]);
+        list lSrcRestr = llParseString2List(llList2String(g_lRestrictions,iSource),["§"],[]);
         iRestr=llListFindList(lSrcRestr, [sBehav]);
         if (iRestr==-1)
         {
-            g_lRestrictions=llListReplaceList(g_lRestrictions,[llDumpList2String(lSrcRestr+[sBehav],"/")],iSource, iSource);
+            g_lRestrictions=llListReplaceList(g_lRestrictions,[llDumpList2String(lSrcRestr+[sBehav],"§")],iSource, iSource);
         }
     }
     if (iRestr==-1)
@@ -258,7 +280,7 @@ RemRestriction(key kID, string sBehav)
     integer iRestr;
     if (iSource!=-1)
     {
-        list lSrcRestr = llParseString2List(llList2String(g_lRestrictions,iSource),["/"],[]);
+        list lSrcRestr = llParseString2List(llList2String(g_lRestrictions,iSource),["§"],[]);
         iRestr=llListFindList(lSrcRestr,[sBehav]);
         if (iRestr!=-1)
         {
@@ -271,7 +293,7 @@ RemRestriction(key kID, string sBehav)
             else
             {
                 lSrcRestr=llDeleteSubList(lSrcRestr,iRestr,iRestr);
-                g_lRestrictions=llListReplaceList(g_lRestrictions,[llDumpList2String(lSrcRestr,"/")] ,iSource,iSource);
+                g_lRestrictions=llListReplaceList(g_lRestrictions,[llDumpList2String(lSrcRestr,"§")] ,iSource,iSource);
             }
             if (sBehav=="unsit"&&g_kSitter==kID)
             {
@@ -295,12 +317,13 @@ ApplyRem(string sBehav)
         integer iFound=FALSE;
         for (i=0;i<=llGetListLength(g_lRestrictions);i++)
         {
-            list lSrcRestr=llParseString2List(llList2String(g_lRestrictions,i),["/"],[]);
+            list lSrcRestr=llParseString2List(llList2String(g_lRestrictions,i),["§"],[]);
             if (llListFindList(lSrcRestr, [sBehav])!=-1) iFound=TRUE;
         }
         if (!iFound)
         {
             g_lBaked=llDeleteSubList(g_lBaked,iRestr,iRestr);
+            //if (sBehav!="no_hax")  removed:Â issue 1040
             SendCommand(sBehav+"=y");
         }
     }
@@ -311,7 +334,7 @@ Release(key kID, string sPattern)
 {
     integer iSource=llListFindList(g_lSources,[kID]);
     if (iSource!=-1) {
-        list lSrcRestr=llParseString2List(llList2String(g_lRestrictions,iSource),["/"],[]);
+        list lSrcRestr=llParseString2List(llList2String(g_lRestrictions,iSource),["§"],[]);
         integer i;
         if (sPattern!="") {
             for (i=0;i<=llGetListLength(lSrcRestr);i++) {
@@ -452,6 +475,7 @@ default{
 
     link_message(integer iSender, integer iNum, string sStr, key kID)
     {
+
         if (iNum == LM_SETTING_SAVE)
         {
             list lParams = llParseString2List(sStr, ["="], []);

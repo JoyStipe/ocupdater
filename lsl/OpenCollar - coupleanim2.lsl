@@ -1,4 +1,4 @@
-//OpenCollar - coupleanim2
+﻿//OpenCollar - coupleanim2
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 key g_kPartner;
 float g_fTimeOut = 30.0;//time for the potential kissee to respond before we give up
@@ -50,12 +50,6 @@ string GetScriptID()
     // strip away "OpenCollar - " leaving the script's individual name
     list parts = llParseString2List(llGetScriptName(), ["-"], []);
     return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
-}
-string PeelToken(string in, integer slot)
-{
-    integer i = llSubStringIndex(in, "_");
-    if (!slot) return llGetSubString(in, 0, i);
-    return llGetSubString(in, i + 1, -1);
 }
 
 string FirstName(string sName)

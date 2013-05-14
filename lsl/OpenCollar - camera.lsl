@@ -1,4 +1,4 @@
-//OpenCollar - camera
+﻿//OpenCollar - camera
 //allows dom to set different camera mode
 //responds to commands from modes list
 
@@ -266,18 +266,37 @@ string TightListTypeDump(list lInput, string sSeperators) {//This function is da
     return sSeperators + sCumulator;
 }
 
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer) 
+integer GetOwnerChannel(key kOwner, integer iOffset)
 {
-    if (kID == g_kWearer) 
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
-    } else {
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
         llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) 
+        if (iAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
         }
-    }    
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
+    }
 }
 
 Debug(string sStr)
@@ -395,7 +414,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             llSetTimerEvent(g_fReapeat);
         }
     }
-    else if (iNum == COMMAND_OWNER && sStr == "runaway")
+    else if ((iNum == COMMAND_OWNER  || kID == g_kWearer) && sStr == "runaway")
     {
         ClearCam();
         llResetScript();

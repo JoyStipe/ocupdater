@@ -1,4 +1,4 @@
-//OpenCollar - listener
+﻿//OpenCollar - listener
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //listener
 
@@ -58,29 +58,6 @@ string g_sSeparator = "|";
 string g_iAuth;
 string UUID;
 string g_sCmd;
-
-
-//===============================================================================
-//= parameters   :    key owner            key of the person to send the message to
-//=                    integer nOffset        Offset to make sure we use really a unique channel
-//=
-//= description  : Function which calculates a unique channel number based on the owner key, to reduce lag
-//=
-//= returns      : Channel number to be used
-//===============================================================================
-integer GetOwnerChannel(key kOwner, integer iOffset)
-{
-    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
-    if (iChan>0)
-    {
-        iChan=iChan*(-1);
-    }
-    if (iChan > -10000)
-    {
-        iChan -= 30000;
-    }
-    return iChan;
-}
 
 Debug(string sStr)
 {
@@ -163,13 +140,36 @@ integer StartsWith(string sHayStack, string sNeedle) // http://wiki.secondlife.c
     return llDeleteSubString(sHayStack, llStringLength(sNeedle), -1) == sNeedle;
 }
 
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
-    if (kID == g_kWearer) llOwnerSay(sMsg);
-    else
+    if (kID == g_kWearer)
+    {
+        llOwnerSay(sMsg);
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
     {
         llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) llOwnerSay(sMsg);
+        if (iAlsoNotifyWearer)
+        {
+            llOwnerSay(sMsg);
+        }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 

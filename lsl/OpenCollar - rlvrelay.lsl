@@ -1,4 +1,4 @@
-//OpenCollar - rlvrelay
+﻿//OpenCollar - rlvrelay
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 
 integer RELAY_CHANNEL = -1812221819;
@@ -19,7 +19,6 @@ integer LM_SETTING_SAVE = 2000;//scripts send messages on this channel to have s
                             //str must be in form of "token=value"
 integer LM_SETTING_REQUEST = 2001;//when startup, scripts send requests for settings on this channel
 integer LM_SETTING_RESPONSE = 2002;//the httpdb script will send responses on this channel
-integer LM_SETTING_DELETE = 2003;
 
 integer MENUNAME_REQUEST = 3000;
 integer MENUNAME_RESPONSE = 3001;
@@ -154,15 +153,36 @@ string Mode2String(integer iMin)
     }
     return sOut;
 }
-
-notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
-    if (kID == g_kWearer) {
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
+    {
         llOwnerSay(sMsg);
-    } else {
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
         llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) {
+        if (iAlsoNotifyWearer)
+        {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -356,7 +376,7 @@ SafeWord()
     if (g_iSafeMode)
     {
         llMessageLinked(LINK_SET, COMMAND_RELAY_SAFEWORD, "","");
-        notify(g_kWearer, "You have safeworded",TRUE);
+        Notify(g_kWearer, "You have safeworded",TRUE);
         g_lTempBlackList=[];
         g_lTempWhiteList=[];
         g_lTempUserBlackList=[];
@@ -373,7 +393,7 @@ SafeWord()
     }
     else
     {
-        notify(g_kWearer, "Sorry, safewording is disabled now!", TRUE);
+        Notify(g_kWearer, "Sorry, safewording is disabled now!", TRUE);
     }
 }
 
@@ -519,7 +539,7 @@ RemListItem(string sMsg, integer iAuth)
     }
     else if (iAuth==COMMAND_WEARER && g_iMinBaseMode > 0)
     {
-        notify(g_kWearer,"Sorry, your owner does not allow you to remove trusted sources.",TRUE);
+        Notify(g_kWearer,"Sorry, your owner does not allow you to remove trusted sources.",TRUE);
     }
     else if (g_sListType=="Trusted Object")
     {
@@ -587,7 +607,7 @@ CleanQueue()
     Dequeue();
 }
 
-// returns TRUE if it was a user command, FALSE if it is a LM from another subsystem
+// returns TRUE if it was a user command, FALSE if it is a LM from another subsystem
 integer UserCommand(integer iNum, string sStr, key kID)
 {
     if (iNum<COMMAND_OWNER || iNum>COMMAND_WEARER) return FALSE;
@@ -599,7 +619,7 @@ integer UserCommand(integer iNum, string sStr, key kID)
     }
     if (!g_iRLV)
     {
-        notify(kID, "RLV features are now disabled in this collar. You can enable those in RLV submenu. Opening it now.", FALSE);
+        Notify(kID, "RLV features are now disabled in this collar. You can enable those in RLV submenu. Opening it now.", FALSE);
         llMessageLinked(LINK_SET, iNum, "menu RLV", kID);
     }
     else if (sStr=="relay" || sStr == "menu "+g_sSubMenu) Menu(kID, iNum);
@@ -610,13 +630,13 @@ integer UserCommand(integer iNum, string sStr, key kID)
     else if (sStr=="relay getdebug")
     {
         g_kDebugRcpt = kID;
-        notify(kID, "Relay messages will be forwarded to "+llKey2Name(kID)+".", TRUE);
+        Notify(kID, "Relay messages will be forwarded to "+llKey2Name(kID)+".", TRUE);
         return TRUE;
     }
     else if (sStr=="relay stopdebug")
     {
         g_kDebugRcpt = NULL_KEY;
-        notify(kID, "Relay messages will not forwarded anymore.", TRUE);
+        Notify(kID, "Relay messages will not forwarded anymore.", TRUE);
         return TRUE;
     }
     else if (sStr=="pending")
@@ -673,11 +693,11 @@ integer UserCommand(integer iNum, string sStr, key kID)
         }
         if (!iOSuccess)
         {
-            notify(kID, llKey2Name(g_kWearer)+"'s relay minimal authorized mode is successfully set to: "+Mode2String(TRUE), TRUE);
+            Notify(kID, llKey2Name(g_kWearer)+"'s relay minimal authorized mode is successfully set to: "+Mode2String(TRUE), TRUE);
             SaveSettings();
             refreshRlvListener();
         }
-        else notify(kID, "Unknown relay mode.", FALSE);
+        else Notify(kID, "Unknown relay mode.", FALSE);
     }
     else
     {
@@ -725,10 +745,10 @@ integer UserCommand(integer iNum, string sStr, key kID)
             }
             else iWSuccess = 3;
         }
-        if (!iWSuccess) notify(kID, "Your relay mode is successfully set to: "+Mode2String(FALSE), TRUE);
-        else if (iWSuccess == 1) notify(kID, "Minimal mode previously set by owner does not allow this setting. Change it or have it changed first.", TRUE);
-        else if (iWSuccess == 2) notify(kID, "Your relay is being locked by at least one object, you cannot disable it or enable safewording now.", TRUE);
-        else if (iWSuccess == 3) notify(kID, "Invalid command, please read the manual.", FALSE);
+        if (!iWSuccess) Notify(kID, "Your relay mode is successfully set to: "+Mode2String(FALSE), TRUE);
+        else if (iWSuccess == 1) Notify(kID, "Minimal mode previously set by owner does not allow this setting. Change it or have it changed first.", TRUE);
+        else if (iWSuccess == 2) Notify(kID, "Your relay is being locked by at least one object, you cannot disable it or enable safewording now.", TRUE);
+        else if (iWSuccess == 3) Notify(kID, "Invalid command, please read the manual.", FALSE);
         SaveSettings();
         refreshRlvListener();
     }

@@ -1,4 +1,4 @@
-//OpenCollar - texture
+﻿//OpenCollar - texture
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life. See "OpenCollar License" for details.
 //color
 
@@ -24,7 +24,7 @@ key g_ktextureID;
 key g_kTouchID;
 
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "AppearanceLock";
+string g_sAppLockToken = "Appearance_Lock";
 
 //MESSAGE MAP
 //integer COMMAND_NOAUTH = 0;
@@ -172,11 +172,37 @@ list BuildTexButtons()
     return out;
 }
 
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
-    if (kID == g_kWearer) llOwnerSay(sMsg);
-    else llInstantMessage(kID,sMsg);
-    if (iAlsoNotifyWearer) llOwnerSay(sMsg);
+    if (kID == g_kWearer)
+    {
+        llOwnerSay(sMsg);
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
+        {
+            llOwnerSay(sMsg);
+        }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
+    }
 }
 
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)

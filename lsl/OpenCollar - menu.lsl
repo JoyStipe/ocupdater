@@ -1,4 +1,4 @@
-//Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
+﻿//Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //on start, send request for submenu names
 //on getting submenu name, add to list if not already present
 //on menu request, give dialog, with alphabetized list of submenus
@@ -63,30 +63,30 @@ Debug(string text)
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
-    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|"
+    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" 
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
     return kID;
-}
+} 
 
 Menu(string sName, key kID, integer iAuth)
 {
     integer iMenuIndex = llListFindList(g_lMenuNames, [sName]);
-    Debug((string)iMenuIndex);
+    Debug((string)iMenuIndex);    
     if (iMenuIndex != -1)
     {
         list lItems = llParseString2List(llList2String(g_lMenus, iMenuIndex), ["|"], []);
 
         string sPrompt = llList2String(g_lMenuPrompts, iMenuIndex);
-
+        
         list lUtility = [];
-
+        
         if (sName != "Main")
         {
             lUtility = [UPMENU];
         }
-
+        
         key kMenuID = Dialog(kID, sPrompt, lItems, lUtility, 0, iAuth);
-
+        
         integer iIndex = llListFindList(g_lMenuIDs, [kID]);
         if (~iIndex)
         {
@@ -118,16 +118,16 @@ MenuInit()
         {
             //make each submenu appear in Main
             HandleMenuResponse("Main|" + sName);
-
+            
             //request children of each submenu
-            llMessageLinked(LINK_SET, MENUNAME_REQUEST, sName, NULL_KEY);
+            llMessageLinked(LINK_SET, MENUNAME_REQUEST, sName, NULL_KEY);            
         }
     }
-    //give the help menu GIVECARD and REFRESH_MENU buttons
+    //give the help menu GIVECARD and REFRESH_MENU buttons    
     HandleMenuResponse("Help/Debug|" + GIVECARD);
-    HandleMenuResponse("Help/Debug|" + REFRESH_MENU);
-
-    llMessageLinked(LINK_SET, MENUNAME_REQUEST, "Main", "");
+    HandleMenuResponse("Help/Debug|" + REFRESH_MENU);      
+    
+    llMessageLinked(LINK_SET, MENUNAME_REQUEST, "Main", ""); 
 }
 
 HandleMenuResponse(string entry)
@@ -136,7 +136,7 @@ HandleMenuResponse(string entry)
     string sName = llList2String(lParams, 0);
     integer iMenuIndex = llListFindList(g_lMenuNames, [sName]);
     if (iMenuIndex != -1)
-    {
+    {             
         Debug("we handle " + sName);
         string g_sSubMenu = llList2String(lParams, 1);
         //only add submenu if not already present
@@ -149,7 +149,7 @@ HandleMenuResponse(string entry)
             lGuts = llListSort(lGuts, 1, TRUE);
             g_lMenus = llListReplaceList(g_lMenus, [llDumpList2String(lGuts, "|")], iMenuIndex, iMenuIndex);
         }
-    }
+    }    
     else
     {
         Debug("we don't handle " + sName);
@@ -174,10 +174,10 @@ integer UserCommand(integer iNum, string sStr, key kID)
         if (llListFindList(g_lMenuNames, [sSubmenu]) != -1);
         Menu(sSubmenu, kID, iNum);
     }
-    else if (sStr == "help") llGiveInventory(kID, HELPCARD);
+    else if (sStr == "help") llGiveInventory(kID, HELPCARD);                
     else if (sStr == "addons") Menu("AddOns", kID, iNum);
     else if (sStr == "debug") Menu("Help/Debug", kID, iNum);
-    else if (sCmd == "menuto")
+    else if (sCmd == "menuto") 
     {
         // SA: with the new authentification method, I do not like this request for auth at this stage.
         // what happens here is that up to this point, we consider that the wearer is the one
@@ -206,9 +206,9 @@ default
     {
         llSleep(1.0);//delay sending this message until we're fairly sure that other scripts have reset too, just in case
         g_iScriptCount = llGetInventoryNumber(INVENTORY_SCRIPT);
-        MenuInit();
+        MenuInit();      
     }
-
+    
     link_message(integer iSender, integer iNum, string sStr, key kID)
     {
         // SA: delete this after transition is finished
@@ -233,11 +233,11 @@ default
                 list lGuts = llParseString2List(llList2String(g_lMenus, iMenuIndex), ["|"], []);
                 integer gutiIndex = llListFindList(lGuts, [child]);
                 //only remove if it's there
-                if (gutiIndex != -1)
+                if (gutiIndex != -1)        
                 {
                     lGuts = llDeleteSubList(lGuts, gutiIndex, gutiIndex);
-                    g_lMenus = llListReplaceList(g_lMenus, [llDumpList2String(lGuts, "|")], iMenuIndex, iMenuIndex);
-                }
+                    g_lMenus = llListReplaceList(g_lMenus, [llDumpList2String(lGuts, "|")], iMenuIndex, iMenuIndex);                    
+                }        
             }
         }
         else if (iNum == DIALOG_RESPONSE)
@@ -247,15 +247,15 @@ default
             {
                 //got a menu response meant for us.  pull out values
                 list lMenuParams = llParseString2List(sStr, ["|"], []);
-                key kAv = (key)llList2String(lMenuParams, 0);
-                string sMessage = llList2String(lMenuParams, 1);
+                key kAv = (key)llList2String(lMenuParams, 0);          
+                string sMessage = llList2String(lMenuParams, 1);                                         
                 integer iPage = (integer)llList2String(lMenuParams, 2);
                 integer iAuth = (integer)llList2String(lMenuParams, 3);
-
+                
                 //remove stride from g_lMenuIDs
                 //we have to subtract from the index because the dialog id comes in the middle of the stride
-                g_lMenuIDs = llDeleteSubList(g_lMenuIDs, iMenuIndex - 1, iMenuIndex - 2 + g_iMenuStride);
-
+                g_lMenuIDs = llDeleteSubList(g_lMenuIDs, iMenuIndex - 1, iMenuIndex - 2 + g_iMenuStride);                
+                
                 //process response
                 if (sMessage == UPMENU)
                 {
@@ -284,7 +284,7 @@ default
             integer iMenuIndex = llListFindList(g_lMenuIDs, [kID]);
             //remove stride from g_lMenuIDs
             //we have to subtract from the index because the dialog id comes in the middle of the stride
-            g_lMenuIDs = llDeleteSubList(g_lMenuIDs, iMenuIndex - 1, iMenuIndex - 2 + g_iMenuStride);
+            g_lMenuIDs = llDeleteSubList(g_lMenuIDs, iMenuIndex - 1, iMenuIndex - 2 + g_iMenuStride);                        
         }
     }
 
@@ -292,7 +292,7 @@ default
     {
         llResetScript();
     }
-
+    
     changed(integer iChange)
     {
         if (iChange & CHANGED_INVENTORY)

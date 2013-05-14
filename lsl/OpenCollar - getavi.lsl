@@ -1,4 +1,4 @@
-//OpenCollar - getavi
+﻿//OpenCollar - getavi
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 
 // Format: REQ script asks for "add" TYPE from RCV script, with an optional name
@@ -34,27 +34,46 @@ Debug(string sStr)
     //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
 
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
-    if (kID == g_kWearer) llOwnerSay(sMsg);
-    else
+    if (kID == g_kWearer)
+    {
+        llOwnerSay(sMsg);
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
     {
         llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) llOwnerSay(sMsg);
+        if (iAlsoNotifyWearer)
+        {
+            llOwnerSay(sMsg);
+        }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
+
 string GetScriptID()
 {
     // strip away "OpenCollar - " leaving the script's individual name
     list parts = llParseString2List(llGetScriptName(), ["-"], []);
     return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
-string PeelToken(string in, integer slot)
-{
-    integer i = llSubStringIndex(in, "_");
-    if (!slot) return llGetSubString(in, 0, i);
-    return llGetSubString(in, i + 1, -1);
-}
+
 list FindAvis(string in, list ex)
 {
     list out = llGetAgentList(AGENT_LIST_REGION, []);

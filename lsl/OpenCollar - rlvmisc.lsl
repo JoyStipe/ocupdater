@@ -1,4 +1,4 @@
-//OpenCollar - rlvmisc
+﻿//OpenCollar - rlvmisc
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 string g_sParentMenu = "RLV";
 string g_sSubMenu = "Misc";
@@ -58,7 +58,7 @@ integer FLOATLINK; // hover text link number
 
 key kMenuID;
 
-integer g_iRLVOn=FALSE; // make sure the rlv only gets activated
+integer g_iRLVOn=FALSE; // make sure the rlv only gets activated 
 
 //MESSAGE MAP
 //integer COMMAND_NOAUTH = 0;
@@ -119,13 +119,26 @@ string PeelToken(string in, integer slot)
     if (!slot) return llGetSubString(in, 0, i);
     return llGetSubString(in, i + 1, -1);
 }
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
     if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
     }
-    else
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
     {
         llInstantMessage(kID,sMsg);
         if (iAlsoNotifyWearer)
@@ -133,9 +146,11 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
             llOwnerSay(sMsg);
         }
     }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
+    }
 }
-
-
 Menu(key kID, integer iAuth)
 {
     if (!g_iRLVOn)
@@ -242,10 +257,10 @@ ClearSettings()
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
-    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|"
+    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" 
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
     return kID;
-}
+} 
 
 integer UserCommand(integer iNum, string sStr, key kID)
 {
@@ -325,7 +340,7 @@ default
         // llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, NULL_KEY);
         //llMessageLinked(LINK_SET, LM_SETTING_REQUEST, g_sDBToken, NULL_KEY);
     }
-
+    
     link_message(integer iSender, integer iNum, string sStr, key kID)
     {
         if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu)
@@ -370,10 +385,10 @@ default
             if (kID == kMenuID)
             {
                 list lMenuParams = llParseString2List(sStr, ["|"], []);
-                key kAv = (key)llList2String(lMenuParams, 0);
-                string sMessage = llList2String(lMenuParams, 1);
-                integer iPage = (integer)llList2String(lMenuParams, 2);
-                integer iAuth = (integer)llList2String(lMenuParams, 3);
+                key kAv = (key)llList2String(lMenuParams, 0);          
+                string sMessage = llList2String(lMenuParams, 1);                                         
+                integer iPage = (integer)llList2String(lMenuParams, 2);                
+                integer iAuth = (integer)llList2String(lMenuParams, 3);                
                 if (sMessage == UPMENU)
                 {
                     llMessageLinked(LINK_SET, iAuth, "menu " + g_sParentMenu, kAv);
@@ -398,7 +413,7 @@ default
                         {
                             ONOFF = "y";
                         }
-
+        
                         //loop through rlvcmds to create list
                         string sOut;
                         integer n;

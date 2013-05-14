@@ -1,4 +1,4 @@
-//OpenCollar - hide
+﻿//OpenCollar - hide
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //on getting menu request, give element menu
 //on getting element type, give Hide and Show buttons
@@ -19,7 +19,7 @@ string g_sIgnore = "nohide";
 list g_lButtons;
 
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "AppearanceLock";
+string g_sAppLockToken = "Appearance_Lock";
 
 
 //MESSAGE MAP
@@ -62,19 +62,36 @@ string SHOWN = "Shown";
 string HIDDEN = "Hidden";
 string ALL = "All";
 
-Notify(key keyID, string sMsg, integer nAlsoNotifyWearer)
+integer GetOwnerChannel(key kOwner, integer iOffset)
 {
-    if (keyID == g_kWearer)
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
     }
-    else
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
     {
-        llInstantMessage(keyID,sMsg);
-        if (nAlsoNotifyWearer)
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 string GetScriptID()

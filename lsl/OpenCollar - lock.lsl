@@ -1,4 +1,4 @@
-//OpenCollar - lock
+﻿//OpenCollar - lock
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 
 list g_lOwners;
@@ -55,19 +55,36 @@ integer RLV_CLEAR = 6002;//RLV plugins should clear their restriction lists upon
 integer g_bDetached = FALSE;
 
 key g_kWearer;
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
     if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
     }
-    else
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
     {
         llInstantMessage(kID,sMsg);
         if (iAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -238,6 +255,7 @@ default
                 }
                 else Notify(kID, "Sorry, only primary owners can unlock the collar.", FALSE);
             }
+            
             else if (sStr == "menu " + LOCK)
             {
                 if (iNum == COMMAND_OWNER || kID == g_kWearer )

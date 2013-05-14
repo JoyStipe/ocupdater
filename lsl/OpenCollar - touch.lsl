@@ -1,4 +1,4 @@
-// OpenCollar - touch
+﻿// OpenCollar - touch
 //
 // This script is under the GPLv2 license with additional requirement that when it is distributed,
 // either as is or in a modified form, within SecondLife or any virtual world with similar permissions system,

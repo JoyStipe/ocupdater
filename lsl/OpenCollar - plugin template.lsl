@@ -1,4 +1,4 @@
-// Template for creating a OpenCollar Plugin
+﻿// Template for creating a OpenCollar Plugin
 // API Version: 3.8
 
 // Licensed under the GPLv2, with the additional requirement that these scripts
@@ -122,7 +122,7 @@ Debug(string sMsg) {
 }
 
 //===============================================================================
-//= parameters   :    key       kID                key of the avatar that receives the message
+//= parameters   :    key       kID                key of the avatar/remote object that receives the message
 //=                   string    sMsg               message to send
 //=                   integer   iAlsoNotifyWearer  if TRUE, a copy of the message is sent to the wearer
 //=
@@ -132,16 +132,36 @@ Debug(string sMsg) {
 //=
 //===============================================================================
 
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
-    if (kID == g_kWearer) {
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
+    {
         llOwnerSay(sMsg);
     }
-    else {
-        llInstantMessage(kID, sMsg); // llRegionSayTo(key id, integer channel, string message) instead of llInstantMessage
-				     // is also possible if you do not need to notify people in other regions
-        if (iAlsoNotifyWearer) {
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
+        llInstantMessage(kID,sMsg);
+        if (iAlsoNotifyWearer)
+        {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -161,10 +181,10 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
-    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" 
+    llMessageLinked(LINK_SET, DIALOG, (string)llGetOwnerKey(kRCPT) + "|" + sPrompt + "|" + (string)iPage + "|"
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
     return kID;
-} 
+}
 
 //===============================================================================
 //= parameters   :    string    keyID   key of person requesting the menu
@@ -258,7 +278,7 @@ integer UserCommand(integer iNum, string sStr, key kID) {
         llMessageLinked(LINK_THIS, LM_SETTING_SAVE, GetScriptID() + "token=value", NULL_KEY);
 
         // or delete a toke from the setting store:
-        llMessageLinked(LINK_THIS, LM_SETTING_DELETE, GetScriptID() + "token", NULL_KEY);                
+        llMessageLinked(LINK_THIS, LM_SETTING_DELETE, GetScriptID() + "token", NULL_KEY);
     }
     return TRUE;
 }
@@ -266,7 +286,7 @@ integer UserCommand(integer iNum, string sStr, key kID) {
 
 
 default {
-    
+
     state_entry() {
         // store key of wearer
         g_kWearer = llGetOwner();
@@ -279,7 +299,7 @@ default {
 
     // Reset the script if wearer changes. By only reseting on owner change we can keep most of our
     // configuration in the script itself as global variables, so that we don't loose anything in case
-    // the settings store isn't available, and also keep settings that were not sent to that store 
+    // the settings store isn't available, and also keep settings that were not sent to that store
     // in the first place.
     // Cleo: As per Nan this should be a reset on every rez, this has to be handled as needed, but be prepared that the user can reset your script anytime using the OC menus
     on_rez(integer iParam) {

@@ -1,4 +1,4 @@
-//OpenCollar - rlvundress
+﻿//OpenCollar - rlvundress
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //gives menus for clothing and attachment, stripping and locking
 
@@ -178,19 +178,36 @@ string PeelToken(string in, integer slot)
     if (!slot) return llGetSubString(in, 0, i);
     return llGetSubString(in, i + 1, -1);
 }
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
     if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
     }
-    else
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
     {
         llInstantMessage(kID,sMsg);
         if (iAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
         }
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -752,7 +769,7 @@ default
                     if (sMessage == UPMENU) MainMenu(kAv, iAuth);
                     else if (sMessage == "Attachments") QueryAttachments(kAv, iAuth);
                     else if (sMessage == ALL) 
-                    // SA:� we can count ourselves lucky that all people who can see the menu have sufficient privileges for remoutfit commands!
+                    // SA:Â we can count ourselves lucky that all people who can see the menu have sufficient privileges for remoutfit commands!
                     //    Note for people looking for the auth check: it would have been here, look no further!
                     { //send the RLV command to remove it.
                         llMessageLinked(LINK_SET, RLV_CMD,  "remoutfit=force", NULL_KEY);

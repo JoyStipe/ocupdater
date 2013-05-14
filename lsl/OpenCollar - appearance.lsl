@@ -1,4 +1,4 @@
-//OpenCollar - appearance
+﻿//OpenCollar - appearance
 //handle appearance menu
 //handle saving position on detach, and restoring it on httpdb_response
 
@@ -33,7 +33,7 @@ string UNTICKED = "( )";
 
 string APPLOCK = "Lock Appearance";
 integer g_iAppLock = FALSE;
-string g_sAppLockToken = "AppearanceLock";
+string g_sAppLockToken = "Appearance_Lock";
 
 //MESSAGE MAP
 integer COMMAND_NOAUTH = 0;
@@ -73,7 +73,7 @@ integer DIALOG = -9000;
 integer DIALOG_RESPONSE = -9001;
 integer DIALOG_TIMEOUT = -9002;
 
-//string UPMENU = "?";//when your menu hears this, give the parent menu
+//string UPMENU = "â†‘";//when your menu hears this, give the parent menu
 string UPMENU = "^";
 
 key g_kWearer;
@@ -86,15 +86,37 @@ key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integ
     return kID;
 } 
 
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
-    if (kID == g_kWearer) {
+integer GetOwnerChannel(key kOwner, integer iOffset)
+{
+    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
+    if (iChan>0)
+    {
+        iChan=iChan*(-1);
+    }
+    if (iChan > -10000)
+    {
+        iChan -= 30000;
+    }
+    return iChan;
+}
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer)
+    {
         llOwnerSay(sMsg);
-    } else {
+    }
+    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    {
         llInstantMessage(kID,sMsg);
-        if (iAlsoNotifyWearer) {
+        if (iAlsoNotifyWearer)
+        {
             llOwnerSay(sMsg);
         }
-    }    
+    }
+    else // remote request
+    {
+        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
+    }
 }
 
 Debug(string sStr)
