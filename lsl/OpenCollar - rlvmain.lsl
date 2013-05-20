@@ -379,9 +379,6 @@ SafeWord(integer iCollarToo) {
 
 integer UserCommand(integer iNum, string sStr, key kID)
 {
-    // SA: TODO delete this when transition is finished
-    if (iNum == COMMAND_NOAUTH) {llMessageLinked(LINK_SET, iNum, sStr, kID); return TRUE;}
-    // /SA
     if (iNum == COMMAND_EVERYONE) return TRUE;  // No command for people with no privilege in this plugin.
     else if (iNum > COMMAND_EVERYONE || iNum < COMMAND_OWNER) return FALSE; // sanity check
     list lParams = llParseString2List(sStr, [" "], []);

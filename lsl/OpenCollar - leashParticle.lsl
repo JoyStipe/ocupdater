@@ -1,4 +1,4 @@
-﻿//OpenCollar - leashParticle
+//OpenCollar - leashParticle
 //leash particle script for the Open Collar Project (c)
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //Split from the leash script in April 2010 by Garvin Twine
@@ -555,6 +555,7 @@ default
             g_kLeashedTo = kMessageID;
             if (sMessage == "unleash")
             {
+                llSetTimerEvent(0);
                 g_bLeasherInRange = FALSE;
                 StopParticles(TRUE);
                 llListenRemove(g_iLMListener);
@@ -924,8 +925,8 @@ default
         {
             if(!g_bLeasherInRange)
             {
-                llMessageLinked(LINK_THIS, COMMAND_LEASH_SENSOR, "Leasher in range", NULLKEY);
-                LMSay();
+//                llMessageLinked(LINK_THIS, COMMAND_LEASH_SENSOR, "Leasher in range", NULLKEY);
+//                LMSay();
                 if (g_iAwayCounter)
                 {
                     g_iAwayCounter = 0;
@@ -934,7 +935,7 @@ default
                 StartParticles(g_kParticleTarget);
                 g_bLeasherInRange = TRUE;
                 //hate this sleep but somehow sometimes this message seems to get lost...
-                llSleep(1.5);
+//                llSleep(1.5);
                 llMessageLinked(LINK_THIS, COMMAND_LEASH_SENSOR, "Leasher in range", NULLKEY);
                 LMSay();
             }

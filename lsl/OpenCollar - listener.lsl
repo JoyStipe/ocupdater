@@ -1,4 +1,4 @@
-﻿//OpenCollar - listener
+//OpenCollar - listener
 //Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
 //listener
 
@@ -242,19 +242,37 @@ default
             {
                 llMessageLinked(LINK_SET, COMMAND_NOAUTH, sMsg, llGetOwnerKey(kID));
             }
+            return;
         }
 
-        else if (iChan == g_iLockMeisterChan)
+        if (iChan == g_iLockMeisterChan)
         {
             llWhisper(g_iLockMeisterChan,(string)g_kWearer + "collar ok");
+            return;
         }
-        else if((kID == g_kWearer) && ((sMsg == g_sSafeWord)||(sMsg == "(("+g_sSafeWord+"))")))
-        { // safeword can be the safeword or safeword said in OOC chat "((SAFEWORD))"
-            llMessageLinked(LINK_SET, COMMAND_SAFEWORD, "", NULL_KEY);
-            llOwnerSay("You used your safeword, your owner will be notified you did.");
+        if(kID == g_kWearer)
+        {
+            llOwnerSay(sMsg + " in");
+            string sw = sMsg; // we'll have to shave pieces off as we go to test
+            // safeword can be the safeword or safeword said in OOC chat "((SAFEWORD))"
+            // and may include prefix
+            if (StartsWith(sw, "((")) sw = llGetSubString(sw, 2, -1);
+            if (llGetSubString(sw, -2, -1) == "))") sw = llGetSubString(sw, 0, -3);
+            if (StartsWith(sw, g_sPrefix))
+            {
+                integer i = llStringLength(g_sPrefix);
+                sw = llGetSubString(sw, i, -1);
+            }
+            llOwnerSay(sw + " out");
+            if (sw == g_sSafeWord)
+            {
+                llMessageLinked(LINK_SET, COMMAND_SAFEWORD, "", NULL_KEY);
+                llOwnerSay("You used your safeword, your owner will be notified you did.");
+                return;
+            }
         }
         //added for attachment auth (garvin)
-        else if (iChan == g_iInterfaceChannel)
+        if (iChan == g_iInterfaceChannel)
         {
             Debug(sMsg);
             //do nothing if wearer isnt owner of the object
@@ -385,28 +403,6 @@ default
                         Notify(kID, "Error: 'channel' must be given a number.", FALSE);
                     }
                 }
-                //                else if(kID == g_kWearer)
-                //                {
-                //                    if (sCommand == "safeword")
-                //                    {   // new for safeWord
-                //                        string sValue = llList2String(lParams, 1);
-                //                        if(llStringTrim(sValue, STRING_TRIM) != "")
-                //                        {
-                //                            g_sSafeWord = sValue;
-                //                            llOwnerSay("You set a new safeword: " + sValue + ".");
-                //                            llMessageLinked(LINK_SET, LM_SETTING_SAVE, "safeword=" + sValue, NULL_KEY);
-                //                        }
-                //                        else
-                //                        {
-                //                            llOwnerSay("Your safeword is: " + g_sSafeWord + ".");
-                //                        }
-                //                    }
-                //                    else if (sStr == g_sSafeWord)
-                //                    { //safeWord used with prefix
-                //                        llMessageLinked(LINK_SET, COMMAND_SAFEWORD, "", NULL_KEY);
-                //                        llOwnerSay("You used your safeword, your owner will be notified you dkID.");
-                //                    }
-                //                }
             }
             if (kID == g_kWearer)
             {
@@ -423,11 +419,6 @@ default
                         llOwnerSay("Your safeword is: " + g_sSafeWord + ".");
                     }
                 }
-                else if (sStr == g_sSafeWord)
-                { //safeword used with prefix
-                    llMessageLinked(LINK_SET, COMMAND_SAFEWORD, "", NULL_KEY);
-                    llOwnerSay("You used your safeword, your owner will be notified you did.");
-                }
             }
         }
         else if (iNum == LM_SETTING_RESPONSE)
@@ -439,9 +430,7 @@ default
             {
                 if (sValue == "") sValue = "auto";
                 SetPrefix(sValue);
-                //llInstantMessage(g_kWearer, "Loaded prefix " + g_sPrefix + " from database.");
                 SetListeners();
-                //Notify(g_kWearer "\nPrefix set to '" + g_sPrefix + "'.\nTouch the collar or say '" + g_sPrefix + "menu' for the main menu.\nSay '" + g_sPrefix + "help' for a list of chat commands.");
             }
             else if (PeelToken(sToken, 0) == GetScriptID())
             {
@@ -452,7 +441,7 @@ default
                     if (llGetSubString(sValue, llStringLength(sValue) - 5 , -1) == "FALSE")
                     {
                         g_iListenChan0 = FALSE;
-                    }  
+                    }
                     else
                     {
                         g_iListenChan0 = TRUE;
@@ -461,15 +450,15 @@ default
                     SetListeners();
                 }
                 else if (sToken == "safeword")
-                {  
+                {
                     g_sSafeWord = sValue;
                 }
             }
         }
-//        else if (iNum == LM_SETTING_EMPTY && sStr == "prefix")
-//        {
-//            SetPrefix("auto");
-//        }
+        //        else if (iNum == LM_SETTING_EMPTY && sStr == "prefix")
+        //        {
+        //            SetPrefix("auto");
+        //        }
         else if (iNum == POPUP_HELP)
         {
             //replace _PREFIX_ with prefix, and _CHANNEL_ with (strin) channel

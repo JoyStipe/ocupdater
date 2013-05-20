@@ -781,6 +781,7 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID)
             llTargetRemove(g_iTargetHandle);
             g_vPos = llList2Vector(llGetObjectDetails(g_kLeashedTo,[OBJECT_POS]),0);
             g_iTargetHandle = llTarget(g_vPos, g_fLength);
+            if (g_vPos != ZERO_VECTOR) llMoveToTarget(g_vPos, 0.7);
         }
     }
     else if (iAuth == COMMAND_EVERYONE)
