@@ -14,6 +14,8 @@ integer IN_DEBUG_MODE               = FALSE;    // set to TRUE to enable Debug m
 
 key     g_kMenuID;                              // menu handler
 key     g_kWearer;                              // key of the current wearer to reset only on owner changes
+string  g_sScript;                              // part of script name used for settings
+string CTYPE 						= "collar";	// designer can set in notecard to appropriate word for their item		
 
  // any local, not changing buttons which will be used in this plugin, leave empty or add buttons as you like:
 list    PLUGIN_BUTTONS              = ["Command 1", "Command 2", "AuthCommand"];
@@ -81,6 +83,9 @@ integer DIALOG                     = -9000;
 integer DIALOG_RESPONSE            = -9001;
 integer DIALOG_TIMEOUT             = -9002;
 
+integer FIND_AGENT                   = -9005; // to look for agent(s) in region with a (optional) search string
+key REQUEST_KEY;
+
 integer TIMER_EVENT                = -10000; // str = "start" or "end". For start, either "online" or "realtime".
 
 integer UPDATE                     = 10001;  // for child prim scripts (currently none in 3.8, thanks to LSL new functions)
@@ -122,7 +127,7 @@ Debug(string sMsg) {
 }
 
 //===============================================================================
-//= parameters   :    key       kID                key of the avatar/remote object that receives the message
+//= parameters   :    key       kID                key of the avatar that receives the message
 //=                   string    sMsg               message to send
 //=                   integer   iAlsoNotifyWearer  if TRUE, a copy of the message is sent to the wearer
 //=
@@ -132,36 +137,19 @@ Debug(string sMsg) {
 //=
 //===============================================================================
 
-integer GetOwnerChannel(key kOwner, integer iOffset)
-{
-    integer iChan = (integer)("0x"+llGetSubString((string)kOwner,2,7)) + iOffset;
-    if (iChan>0)
-    {
-        iChan=iChan*(-1);
-    }
-    if (iChan > -10000)
-    {
-        iChan -= 30000;
-    }
-    return iChan;
-}
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
     if (kID == g_kWearer)
     {
         llOwnerSay(sMsg);
     }
-    else if (llGetAgentSize(kID) != ZERO_VECTOR)
+    else
     {
-        llInstantMessage(kID,sMsg);
+        llInstantMessage(kID, sMsg);
         if (iAlsoNotifyWearer)
         {
             llOwnerSay(sMsg);
         }
-    }
-    else // remote request
-    {
-        llRegionSayTo(kID, GetOwnerChannel(g_kWearer, 1111), sMsg);
     }
 }
 
@@ -206,36 +194,27 @@ DoMenu(key keyID, integer iAuth) {
     g_kMenuID = Dialog(keyID, sPrompt, lMyButtons, [UPMENU], 0, iAuth);
 }
 
-
 //===============================================================================
-//= parameters   :    none
+//= parameters   :    auth: integer (avatar auth level)
+//=                      type: string; user-defined label; what to do with result
+//=                      name: search string (optional) full or partial name to seek
+//=                      user: key; Requesting Agent (menu user / chat commander)
 //=
-//= return        :   string prefix to be used for this script's settings
+//= return        :    none
 //=
-//= description  :   portion of the name of the script following "OpenCollar - "
+//= description  :    request agent key, searching in region, with name as criteria
 //=
 //===============================================================================
-
-string GetScriptID()
+FetchAvi(integer auth, string type, string name, key user)
 {
-    // strip away "OpenCollar - " leaving the script's individual name
-    list parts = llParseString2List(llGetScriptName(), ["-"], []);
-    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
-}
-//===============================================================================
-//= parameters   :    in: 2-part string separated by an undescore (_)
-//=					slot: position of string to return, 0=left; 1=right
-//=
-//= return        :   requested sub-string
-//=
-//= description  :   Settings tokens are in form: ScriptID_Token
-//=
-//===============================================================================
-string PeelToken(string in, integer slot)
-{
-    integer i = llSubStringIndex(in, "_");
-    if (!slot) return llGetSubString(in, 0, i);
-    return llGetSubString(in, i + 1, -1);
+    if (name == "") name = " "; // getavi requires a value here - blank will search with no string
+    string out = llDumpList2String(["getavi_", g_sScript, user, auth, type, name], "|");
+    // sometimes, you want to exclude possible finds, such as if they exist in a list you are adding to
+    // do not search for these names (can be partial string)
+    list exclude = ["source list"];
+    if (llGetListLength(exclude))
+        out += "|" + llDumpList2String(exclude, ",");
+    llMessageLinked(LINK_THIS, FIND_AGENT, out, REQUEST_KEY = llGenerateKey());
 }
 
 //===============================================================================
@@ -275,10 +254,10 @@ integer UserCommand(integer iNum, string sStr, key kID) {
         Debug("Do some fancy stuff to impress the user");
 
         // maybe save a value to the setting store:
-        llMessageLinked(LINK_THIS, LM_SETTING_SAVE, GetScriptID() + "token=value", NULL_KEY);
+        llMessageLinked(LINK_THIS, LM_SETTING_SAVE, g_sScript + "token=value", NULL_KEY);
 
         // or delete a toke from the setting store:
-        llMessageLinked(LINK_THIS, LM_SETTING_DELETE, GetScriptID() + "token", NULL_KEY);
+        llMessageLinked(LINK_THIS, LM_SETTING_DELETE, g_sScript + "token", NULL_KEY);
     }
     return TRUE;
 }
@@ -287,7 +266,9 @@ integer UserCommand(integer iNum, string sStr, key kID) {
 
 default {
 
-    state_entry() {
+    state_entry()
+    {
+        g_sScript = llStringTrim(llList2String(llParseString2List(llGetScriptName(), ["-"], []), 1), STRING_TRIM) + "_";
         // store key of wearer
         g_kWearer = llGetOwner();
         // sleep a second to allow all scripts to be initialized
@@ -336,33 +317,35 @@ default {
             string sValue = llList2String(lParams, 1);
             // and check if any values for use are received
             // replace "value1" by your own token
-            if (PeelToken(sToken, 0) == GetScriptID()) // this setting is meant for this script
+            integer i = llSubStringIndex(sToken, "_");
+            if (llGetSubString(sToken, 0, i) == g_sScript)
             {
-            	sToken = PeelToken(sToken, 1); // discard the scriptID from the string
-            	if (sToken == "value1" )
-            	{
-    	            // work with the received values
-        	    }
-            	// replace "value2" by your own token, but if possible try to store everything in one token
-            	// to reduce the load on the setting store (especially if it is implemented as a webservice... )
-	            else if (sToken == "value2")
-	            {
-    	            // work with the received values
-        	    }
-			}
-            // or check for specific values from the collar like "auth_owner" (for owners) "auth_secowner" (for secondary owners) etc
- 	        else if (sToken == "auth_owner")
- 	        {
-    	        // work with the received values, in this case pare the vlaue into a strided list with the owners
-        	    list lOwners = llParseString2List(sValue, [","], []);
+                sToken = llGetSubString(sToken, i + 1, -1);
+                if (sToken == "value1" )
+                {
+                    // work with the received values
+                }
+                // replace "value2" by your own token, but if possible try to store everything in one token
+                // to reduce the load on the setting store (especially if it is implemented as a webservice... )
+                else if (sToken == "value2")
+                {
+                    // work with the received values
+                }
             }
+            // or check for specific values from the collar like "auth_owner" (for owners) "auth_secowner" (for secondary owners) etc
+            else if (sToken == "auth_owner")
+            {
+                // work with the received values, in this case pare the vlaue into a strided list with the owners
+                list lOwners = llParseString2List(sValue, [","], []);
+            }
+            else if (sToken == "Global_CType") CTYPE = sValue;
         }
         else if (UserCommand(iNum, sStr, kID)) {
             // do nothing more if TRUE
         }
         else if (iNum == COMMAND_EVERYONE) {
             // you might want to react on unauthorized users or such, see message map on the top of the script, please remove if not needed
-            Debug("Go away and get your own sub, you have no right on this collar");
+            Debug("Go away and get your own sub, you have no right on this " + CTYPE + "");
         }
         else if (iNum == COMMAND_SAFEWORD) {
             // Safeword has been received, release any restricitions that should be released
@@ -420,6 +403,20 @@ default {
                 Debug("The user was to slow or lazy, we got a timeout!");
             }
         }
+        else if (iNum == FIND_AGENT)
+        {
+            if (kID != REQUEST_KEY) return; // if we didn't request it, we won't know what to do with it
+            list params = llParseString2List(sStr, ["|"], []);
+            if (llList2String(params, 0) != g_sScript) return; // not sent to us
+            key kUser = (key)llList2String(params, 2); // requesting user key, for Notify or more menus
+            integer iAuth = (integer)llList2String(params, 3); // auth level of user
+            string sType = llList2String(params, 4); // we sent this string as an identifier for what to do with the result
+            key kNew = (key)llList2String(params, 5); // this is the key for whatever agent we picked by name
+            if (sType == "our type identifier")
+            {    // examples
+                // g_lMyList += [kNew];
+                // Notify(kUser, "I think " + llKey2Name(kNew) + " likes you", FALSE);
+            }
+        }
     }
-
 }
