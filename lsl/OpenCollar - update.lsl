@@ -63,13 +63,13 @@ key g_kUpdaterOrb;
 
 // We check for the latest version number by looking at the "~version" notecard
 // inside the 'release' branch of the collar's Github repo.
-string version_check_url = "https://raw.github.com/OpenCollarUpdates/ocupdater/release/lsl/~version";
+string version_check_url = "https://raw.github.com/OpenCollarUpdates/ocupdater/Project_Evolution/lsl/~version";
 key github_version_request;
 
 // A request to this URL will trigger delivery of an updater.  We omit the
 // "version=blah" parameter because we don't want the server deciding whether
 // we should get an updater or not.  We just want one.
-string delivery_url = "http://update.mycollar.org/updater/check?object=OpenCollarUpdater&update=yes";
+string delivery_url = "http://update.mycollar.org/updater/check?object=OpenCollarUpdater%20Evolution&update=yes";
 key appengine_delivery_request;
 
 // The news system is back!  Only smarter this time.  News will be kept in a

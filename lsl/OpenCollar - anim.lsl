@@ -354,7 +354,7 @@ integer UserCommand(integer iNum, string sStr, key kID)
     }
     else if (sStr == "settings")
     {
-        if (g_sCurrentPose != "")
+        if (g_sCurrentPose != "" && (iNum == COMMAND_OWNER || iNum == COMMAND_WEARER))
         {
             Notify(kID, "Current Pose: " + g_sCurrentPose, FALSE);
         }

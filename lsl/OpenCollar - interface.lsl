@@ -14,23 +14,6 @@
 
 //OpenCollar MESSAGE MAP
 // messages for authenticating users
-//start_unprocessed_text
-// OpenCollar - interface
-// Licensed under the GPLv2, with the additional requirement that these scripts remain "full perms" in Second Life.  See "OpenCollar License" for details.
-
-// Message format for remotes = Toucher_UUID:Command[:AuthLow:AuthHigh]
-// Command will be authed for Toucher, if falls between Low & High.
-//  - Low >= 500 (OWNER), High <= 504 (EVERYONE).
-//  - optional, but if used, BOTH values must be present
-//  - [:500:500] would check for owner only auth
-// Returned message (where applicable) will be Toucher_UUID:Response:Auth
-//  - where Auth = auth level of the toucher.
-//  - Keep in mind that most commands will not trigger a response message
-// Ping-Pong. UUID:ping  will be responded to with UUID:pong:iAuth
-//  - IF iAuth falls above 504 or below 500, there will be no response
-
-//OpenCollar MESSAGE MAP
-// messages for authenticating users
 integer COMMAND_OWNER = 500;
 integer COMMAND_SECOWNER = 501;
 integer COMMAND_GROUP = 502;
@@ -41,7 +24,7 @@ integer INTERFACE_REQUEST  = -9006;
 integer INTERFACE_RESPONSE = -9007;
 
 integer INTERFACE_CHANNEL;
-
+list NONO = ["setopenaccess"]; // security
 key g_kWearer;
 
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
@@ -97,6 +80,7 @@ default
         integer i = llGetListLength(lParams);
         key kTouch = (key)llList2String(lParams, 0);
         sMsg = llList2String(lParams, 1);
+        if (llListFindList(NONO, [sMsg])) return; // security
         if (i > 2) 
         {
             string sAuthLow = llList2String(lParams, 2);
@@ -146,4 +130,3 @@ default
         }
     }
 }
-

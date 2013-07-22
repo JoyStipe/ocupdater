@@ -361,7 +361,7 @@ default
             {
                 if (llGetAlpha(ALL_SIDES) == 0.0)
                 {
-                    Notify(kID, "Hiden", FALSE);
+                    Notify(kID, "Hidden", FALSE);
                 }
             }
             else if (iNum == COMMAND_OWNER && sStr == "runaway")

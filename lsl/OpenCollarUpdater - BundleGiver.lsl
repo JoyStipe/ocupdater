@@ -40,8 +40,10 @@ debug(string msg) {
 
 default
 {   
-    link_message(integer sender, integer num, string str, key id) {
-        if (num == DO_BUNDLE) {
+    link_message(integer sender, integer num, string str, key id)
+    {
+        if (num == DO_BUNDLE)
+        {
             debug("doing bundle: " + str);
             // str will be in form talkchannel|uuid|bundle_card_name
             list parts = llParseString2List(str, ["|"], []);
@@ -59,9 +61,12 @@ default
         }
     }
     
-    dataserver(key id, string data) {
-        if (id == lineid) {
-            if (data != EOF) {
+    dataserver(key id, string data)
+    {
+        if (id == lineid)
+        {
+            if (data != EOF)
+            {
                 // process bundle line
                 list parts = llParseString2List(data, ["|"], []);
                 string type = llList2String(parts, 0);
@@ -75,7 +80,9 @@ default
                 msg = llDumpList2String([type, name, uuid, mode], "|");
                 debug("querying: " + msg);             
                 llRegionSayTo(rcpt, talkchannel, msg);
-            } else {
+            }
+            else
+            {
                 debug("finished bundle: " + card);
                 // all done reading the card. send link msg to main script saying we're done.
                 llListenRemove(listener);
@@ -85,25 +92,41 @@ default
         }
     }
     
-    listen(integer channel, string name, key id, string msg) {
+    listen(integer channel, string name, key id, string msg)
+    {
         debug("heard: " + msg);
         // let's live on the edge and assume that we only ever listen with a uuid filter so we know it's safe
         // look for msgs in the form <type>|<name>|<cmd>
         list parts = llParseString2List(msg, ["|"], []);
-        if (llGetListLength(parts) == 3) {
+        if (llGetListLength(parts) == 3)
+        {
             string type = llList2String(parts, 0);
             string name = llList2String(parts, 1);
             string cmd = llList2String(parts, 2);            
-            if (cmd == "SKIP" || cmd == "OK") {
+            if (cmd == "SKIP" || cmd == "OK")
+            {
                 // move on to the next item by reading the next notecard line
                 line++;
                 lineid = llGetNotecardLine(card, line);
-            } else if (cmd == "GIVE") {
+            }
+            else if (cmd == "GIVE")
+            {
                 // give the item, and then read the next notecard line.
-                if (type == "ITEM") {
+                if (type == "ITEM")
+                {
                     llGiveInventory(id, name);
-                } else if (type == "SCRIPT") {
+                }
+                else if (type == "SCRIPT")
+                {
                     // get the full name, and load it via script pin.
+                    integer i;
+                    string test;
+                    while (name != test && i < llGetInventoryNumber(INVENTORY_SCRIPT))
+                    {
+                        test = llGetInventoryName(INVENTORY_SCRIPT, i);
+                        if (llSubStringIndex(test, name) == 0) name = test;
+                        i++;
+                    }
                     llRemoteLoadScriptPin(id, name, pin, TRUE, 0);
                 }
                 line++;

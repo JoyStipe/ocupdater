@@ -378,7 +378,7 @@ Refresh()
 
 integer UserCommand(integer iNum, string sStr, key kID)
 {
-    if (iNum < COMMAND_OWNER || iNum > COMMAND_WEARER) return FALSE;
+    if (iNum != COMMAND_OWNER && iNum != COMMAND_WEARER) return FALSE;
     if (sStr == "menu " + SUBMENU || llToLower(sStr) == llToLower(SUBMENU))
     {
         DoMenu(kID, iNum);
@@ -572,7 +572,11 @@ default
                     USER_PREF = TRUE;
                     USER_SETTINGS = SetSetting(USER_SETTINGS, g_sScript + "Pref", "User");
                 }
-                else if (sMessage == DUMPCACHE) DumpCache(kAv);
+                else if (sMessage == DUMPCACHE)
+                {
+                    if (iAuth == COMMAND_OWNER || iAuth == COMMAND_WEARER) DumpCache(kAv);
+                    else Notify(kAv, "Only Owners & Wearer may access this feature", FALSE);
+                }
                 DoMenu(kAv, iAuth);
             }
         }

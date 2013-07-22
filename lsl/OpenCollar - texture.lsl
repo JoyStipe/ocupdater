@@ -323,16 +323,9 @@ default
                 //llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sDBToken, NULL_KEY);
                 llResetScript();
             }
-            else if (sStr == "settings")
+            else if (kID != g_kWearer && iNum != COMMAND_OWNER) return;
             {
-                Notify(kID, "Texture Settings: " + DumpSettings("\n"), FALSE);
-            }
-            else if (StartsWith(sStr, "settexture"))
-            {
-                if (kID!=g_kWearer && iNum!=COMMAND_OWNER)
-                {
-                    Notify(kID, "You are not allowed to change the textures.", FALSE);
-                }
+                if (sStr == "settings") Notify(kID, "Texture Settings: " + DumpSettings("\n"), FALSE);
                 else if (g_iAppLock)
                 {
                     Notify(kID, "The appearance of the " + CTYPE + " is locked. You cannot access this menu now!", FALSE);

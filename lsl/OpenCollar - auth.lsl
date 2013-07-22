@@ -511,10 +511,7 @@ integer UserCommand(integer iNum, string sStr, key kID) // here iNum: auth value
             string sValr; if (g_iLimitRange) sValr="true"; else sValr="false";
             Notify(kID, "LimitRange: "+ sValr,FALSE);
         }
-        else if (sStr == "listowners")
-        {
-            Notify(kID, "Sorry, you are not allowed to see the owner list.",FALSE);
-        }
+        else Notify(kID, "Only Owners & Wearer may access this command",FALSE);
     }
     else if (sStr == "owners")
     {   //give owner menu
