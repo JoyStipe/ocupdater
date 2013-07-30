@@ -78,14 +78,14 @@ default
         if (iChan != INTERFACE_CHANNEL) return;
         list lParams = llParseString2List(sMsg, ["\\"], []);
         integer i = llGetListLength(lParams);
-        key kTouch = (key)llList2String(lParams, 0);
-        sMsg = llList2String(lParams, 1);
+        key kTouch = llGetOwnerKey(kID);
+        sMsg = llList2String(lParams, 0);
         if (llListFindList(NONO, [sMsg])) return; // security
-        if (i > 2) 
+        if (i > 1) 
         {
-            string sAuthLow = llList2String(lParams, 2);
+            string sAuthLow = llList2String(lParams, 1);
             string sAuthHigh = sAuthLow;
-            if (i > 3) sAuthHigh = llList2String(lParams, 3);
+            if (i > 2) sAuthHigh = llList2String(lParams, 2);
             sMsg += "|" + sAuthLow + "|" + sAuthHigh;
         }
         if (kTouch)
